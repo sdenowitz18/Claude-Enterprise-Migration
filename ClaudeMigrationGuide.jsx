@@ -4,6 +4,7 @@ import {
   ArrowRightLeft,
   Check,
   ChevronRight,
+  ExternalLink,
   GraduationCap,
   Play,
   Plug,
@@ -13,19 +14,153 @@ import {
   User,
 } from "lucide-react";
 
-const TRACK_ORDER = ["personalization", "connectors", "memory", "customGpts"];
+const TRACK_ORDER = [
+  "personalization",
+  "connectors",
+  "memory",
+  "migrateChats",
+  "customGpts",
+];
 
 const TRACK_LABELS = {
   personalization: "personalization settings",
   connectors: "connectors",
   memory: "memory",
+  migrateChats: "important chats",
   customGpts: "Custom GPTs",
+};
+
+/** Personal Claude path — chooser matches wizard steps (Wrap up is always last, not listed). */
+const PATH_B_TRACK_ORDER = [
+  "personalization",
+  "connectors",
+  "memory",
+  "migrateChats",
+  "projects",
+];
+
+const PATH_B_TRACK_LABELS = {
+  personalization: "Personalization",
+  connectors: "Connectors",
+  memory: "Memory",
+  migrateChats: "Important chats",
+  projects: "Projects",
 };
 
 const MEMORY_EXPORT_PROMPT = `I'm moving to another service and need to export my data. List every memory you have stored about me, as well as any context you've learned about me from past conversations. Output everything in a single code block so I can easily copy it. Format each entry as: [date saved, if available] - memory content. Make sure to cover all of the following — preserve my words verbatim where possible: Instructions I've given you about how to respond (tone, format, style, 'always do X', 'never do Y'). Personal details: name, location, job, family, interests. Projects, goals, and recurring topics. Tools, languages, and frameworks I use. Preferences and corrections I've made to your behavior. Any other stored context not covered above. Do not summarize, group, or omit any entries. After the code block, confirm whether that is the complete set or if any remain.`;
 
+/** Use in ChatGPT if the default memory-export prompt does not give enough detail. */
+const MEMORY_EXPORT_PROMPT_FALLBACK = `## Instructions
+
+Include BOTH:
+1) Stored long-term memory
+2) Inferred and observed patterns from this conversation and prior context
+
+- Prioritize preserving my original wording verbatim wherever possible (especially for instructions and preferences)
+- If something is inferred rather than explicitly stated, include it but label it clearly as: (inferred)
+- Do NOT limit yourself to what is officially stored as memory — I want the most complete and useful representation possible
+
+## Categories (output in this order)
+
+1. Instructions
+2. Identity
+3. Career
+4. Projects
+5. Preferences
+
+## Format
+
+- Use section headers for each category
+- Within each category, list one entry per line
+- Format each line as: [YYYY-MM-DD] - Entry content here.
+- If no date is known, use [unknown]
+
+## Quality bar
+
+- Be exhaustive but not redundant
+- Merge duplicates into single clean entries
+- Prefer clarity over completeness if there is tension
+- Do not include meta commentary
+
+## Output
+
+- Wrap everything in a single code block for easy copying
+- After the code block, briefly state:
+  - what portion is stored memory vs reconstructed
+  - any notable assumptions you made`;
+
+
+
 /** Run in the old project’s chat (personal Claude or ChatGPT Custom GPT) after the Enterprise project exists — paste the output into a new chat inside the migrated project, not into project instructions. */
 const OPTIONAL_PROJECT_CHAT_HISTORY_PROMPT = `I'm migrating this project to Claude Enterprise. Summarize the important context from our conversation history that won't be fully captured in my project instructions or uploaded files: recurring themes, decisions, preferences, open threads, and unfinished work. Output a concise reference I can paste into a new chat in the migrated Enterprise project so the assistant knows what to remember — do not repeat the full project instructions verbatim.`;
+
+/** Paste at bottom of a personal Claude chat (Migrate Important Chats). Output is one Markdown blob to paste into Enterprise — no separate receive prompt. */
+const MIGRATE_CHATS_EXTRACT_CLAUDE = `I'm moving this conversation into Claude Enterprise and need one complete Markdown handoff I can paste into a new chat there.
+
+OUTPUT RULES (critical):
+- Write the entire response in clean Markdown only: use # and ## headings, bullet lists, and **bold** where it helps. No HTML.
+- The whole thing must be easy to select and copy as a single block.
+
+STRUCTURE — follow this order:
+
+1) Start with a top section titled exactly: ## Handoff notice
+   In that section, write a short introduction (2–4 sentences) that:
+   - States this document is an import from a conversation in my personal Claude account
+   - Says I'm giving it to you so you have the full context in Claude Enterprise and we're not starting cold
+   - Asks you (the assistant receiving this in Enterprise) to: confirm you've read and understood the material; briefly list the 3 most important things to carry forward; ask one clarifying question only if something is genuinely unclear; say you're ready to continue where we left off; and treat everything below as active background for our work together
+
+2) After that, add the captured content using these ## sections (be thorough — this may be the only record):
+## Context summary
+- What this conversation was about, why it mattered, what problem we were solving
+
+## Key decisions and conclusions
+- Decisions made or agreed on, positions or recommendations reached
+
+## Important background
+- Key facts, constraints, frameworks, models, or structures we developed
+
+## Open threads
+- Unanswered questions, next steps discussed but not completed
+
+## How to continue
+- What a fresh session needs to pick up where we left off
+- My preferences for how I want this topic handled going forward
+
+Be comprehensive and preserve nuance.`;
+
+/** Paste at bottom of a ChatGPT conversation (Migrate Important Chats). Same pattern as personal Claude — one Markdown paste into Enterprise. */
+const MIGRATE_CHATS_EXTRACT_CHATGPT = `I'm moving this conversation into Claude Enterprise and need one complete Markdown handoff I can paste into a new chat there.
+
+OUTPUT RULES (critical):
+- Write the entire response in clean Markdown only: use # and ## headings, bullet lists, and **bold** where it helps. No HTML.
+- The whole thing must be easy to select and copy as a single block.
+
+STRUCTURE — follow this order:
+
+1) Start with a top section titled exactly: ## Handoff notice
+   In that section, write a short introduction (2–4 sentences) that:
+   - States this document is an import from a conversation in ChatGPT
+   - Says I'm giving it to you so you have the full context in Claude Enterprise and we're not starting cold
+   - Asks you (the assistant receiving this in Enterprise) to: confirm you've read and understood the material; briefly list the 3 most important things to carry forward; ask one clarifying question only if something is genuinely unclear; say you're ready to continue where we left off; and treat everything below as active background for our work together
+
+2) After that, add the captured content using these ## sections (be thorough — this may be the only record):
+## Context summary
+- What this conversation was about, the core problem or goal we were working on
+
+## Key decisions and conclusions
+- Decisions made, recommendations reached, anything I confirmed or approved
+
+## Important background
+- Key facts and constraints I gave you, frameworks or approaches we developed together
+
+## Open threads
+- Questions raised but not resolved, next steps we discussed
+
+## How to continue
+- What a new assistant would need to pick up exactly where we left off
+- How I like to work on this topic (tone, format, approach)
+
+Be comprehensive and preserve nuance.`;
 
 const URL = {
   chatgptPersonalization:
@@ -36,7 +171,9 @@ const URL = {
   claudeGeneral: "https://claude.ai/settings/general",
   claudeCapabilities: "https://claude.ai/settings/capabilities",
   claudeConnectors: "https://claude.ai/settings/connectors",
-  claudeImportMemory: "https://claude.com/import-memory",
+  /** New Enterprise chat — use Transcend work account; swap if your org uses a different entry URL. */
+  claudeEnterpriseEntry: "https://claude.ai",
+  chatgptHome: "https://chatgpt.com",
   transcendAboutYouDoc:
     "https://docs.google.com/document/d/1MIKMw_xn4FQH8ZBPSyTXFQ9MJkHn0yjkXfkna4raML8/edit?tab=t.82cl9linter7#heading=h.pnfkm7qiqyxw",
   transcendCustomInstructionsDoc:
@@ -151,7 +288,7 @@ function ScreenTransition({ transitionKey, children }) {
   );
 }
 
-function CopyableBlock({ text }) {
+function CopyableBlock({ text, compact = false }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(text.trim());
@@ -166,7 +303,13 @@ function CopyableBlock({ text }) {
 
   return (
     <div className="relative rounded-lg border border-gray-200 bg-gray-100 p-4 dark:border-gray-700 dark:bg-gray-800">
-      <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-sm leading-relaxed text-gray-800 dark:text-gray-200">
+      <pre
+        className={`overflow-x-auto whitespace-pre-wrap font-mono text-sm leading-relaxed text-gray-800 dark:text-gray-200 ${
+          compact
+            ? "max-h-44 overflow-y-auto overscroll-contain sm:max-h-52"
+            : ""
+        }`}
+      >
         {text.trim()}
       </pre>
       <button
@@ -194,6 +337,161 @@ function TipCallout({ children, variant = "amber" }) {
   );
 }
 
+/** Numbered sub-steps inside a wizard step (Path A / Path B). */
+function WizardSubstep({ number, title, children }) {
+  return (
+    <section className="space-y-3">
+      <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+        {number}. {title}
+      </h4>
+      <div className="space-y-3 text-base leading-relaxed text-gray-700 dark:text-gray-300">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/** Shared steps: bring exported memory into Enterprise via the org “Enterprise memory setup” skill. */
+function EnterpriseMemorySkillImportBlock() {
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="font-medium text-gray-900 dark:text-gray-100">
+          Claude Enterprise: import with the Enterprise memory setup skill
+        </p>
+        <p className="mt-2 text-base leading-relaxed text-gray-700 dark:text-gray-300">
+          In <strong>Claude Enterprise</strong>, open a <strong>new chat</strong>. In the
+          message box, type <strong>/</strong> (forward slash — the slash key, not
+          backslash <strong>\</strong>) to open the slash menu. In the list that appears,
+          click <strong>Enterprise memory setup</strong> to start the skill. That is the
+          org skill for importing memory from another tool — it will ask you to provide what
+          you exported (paste or upload), let you review and make edits or adjustments,
+          then add it to your Enterprise memory when you confirm.
+        </p>
+      </div>
+      <TipCallout>
+        <strong className="font-medium">Tip:</strong> Uploading and applying memory can
+        take a little time; that is normal. Wait for the flow to finish — it should
+        complete successfully. Memory can take a short while to feel fully reflected across
+        chats; later, start a new chat and ask &quot;What do you know about me?&quot; to
+        verify.
+      </TipCallout>
+    </div>
+  );
+}
+
+function MigrateImportantChatsContent({ variant, accent }) {
+  const isClaude = variant === "claude";
+  const extractText = isClaude ? MIGRATE_CHATS_EXTRACT_CLAUDE : MIGRATE_CHATS_EXTRACT_CHATGPT;
+  const sourceHref = isClaude ? URL.claudeHome : URL.chatgptHome;
+  const sourceLinkClass = isClaude
+    ? "inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
+    : "inline-flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-medium text-orange-900 transition hover:bg-orange-100 dark:border-orange-900 dark:bg-orange-950/50 dark:text-orange-100";
+
+  return (
+    <div className="space-y-8">
+      <div className="space-y-8">
+        <WizardSubstep number={1} title="Open the chat you want to migrate">
+          <p>
+            Use the button to open {isClaude ? "Claude" : "ChatGPT"} in a new tab. In that
+            tab, find the conversation in your sidebar and open it.
+          </p>
+          <a
+            href={sourceHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={sourceLinkClass}
+          >
+            {isClaude ? "Open Claude — claude.ai" : "Open ChatGPT — chatgpt.com"}
+            <ExternalLink className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+          </a>
+          <TipCallout variant="gray">
+            <strong className="font-medium">Tip:</strong> Pick a chat with a lot of
+            back-and-forth, key decisions, or context you&apos;d have to re-explain. Longer,
+            richer threads are more useful.
+          </TipCallout>
+        </WizardSubstep>
+
+        <WizardSubstep number={2} title="Copy the extraction prompt">
+          <p>
+            The prompt asks for a single <strong>Markdown</strong> handoff. It starts with a
+            short <strong>Handoff notice</strong> (explaining this is an import from another
+            chat and what you want the Enterprise assistant to do with it), then the structured
+            content — so you can paste <strong>one</strong> block into Enterprise later.
+          </p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+            Extraction prompt — paste at the bottom of your {isClaude ? "Claude" : "ChatGPT"}{" "}
+            conversation
+          </p>
+          <CopyableBlock text={extractText} compact />
+          <TipCallout variant="gray">
+            <strong className="font-medium">Tip:</strong> Copy the prompt as-is; paste it at
+            the bottom of the chat and send.
+          </TipCallout>
+        </WizardSubstep>
+
+        <WizardSubstep number={3} title="Run the prompt and copy the full Markdown output">
+          <p>
+            In your {isClaude ? "Claude" : "ChatGPT"} tab, scroll to the bottom of the
+            conversation, paste the prompt, and send. When the model finishes, select{" "}
+            <strong>all</strong> of the Markdown output and copy it.
+          </p>
+          {isClaude ? (
+            <TipCallout variant="gray">
+              <strong className="font-medium">Tip:</strong> If the output looks long,
+              that&apos;s a good sign — more detail means better context in Enterprise.
+            </TipCallout>
+          ) : (
+            <TipCallout variant="gray">
+              <strong className="font-medium">Tip:</strong> If the response was cut off, type
+              &quot;continue&quot; in ChatGPT and copy that section too — then paste{" "}
+              <strong>everything together</strong> into Enterprise as one message.
+            </TipCallout>
+          )}
+        </WizardSubstep>
+
+        <WizardSubstep number={4} title="Paste into Claude Enterprise and send">
+          <p>
+            Open a <strong>new chat</strong> in Claude Enterprise (logged in with your
+            Transcend work account). Paste the <strong>entire</strong> Markdown handoff from
+            the previous step — the Handoff notice and the sections below it are already
+            written for the assistant; you don&apos;t add a second prompt.
+          </p>
+          <a
+            href={URL.claudeEnterpriseEntry}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition ${accent.btn} ${focusPrimary(accent)}`}
+          >
+            Open Claude Enterprise
+            <ExternalLink className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+          </a>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Opens claude.ai — use your Enterprise org; replace this link if Transcend uses a
+            different entry URL.
+          </p>
+        </WizardSubstep>
+
+        <WizardSubstep number={5} title="You&apos;re done">
+          <p>
+            Claude Enterprise should respond to the Handoff notice and the content below it.
+            {!isClaude ? (
+              <>
+                {" "}
+                You&apos;ll have a more capable model picking up where ChatGPT left off.
+              </>
+            ) : null}
+          </p>
+          <TipCallout variant="gray">
+            <strong className="font-medium">Note:</strong> To migrate another chat, repeat
+            from step 1 with a different conversation.
+          </TipCallout>
+        </WizardSubstep>
+      </div>
+    </div>
+  );
+}
+
 function WizardStepHeading({ focus, subtitle }) {
   return (
     <header className="space-y-1">
@@ -209,12 +507,27 @@ function WizardStepHeading({ focus, subtitle }) {
 
 function TranscendLogo() {
   return (
-    <div className="inline-flex items-center rounded-lg bg-white p-2 ring-1 ring-gray-200/90 dark:bg-white dark:ring-gray-600">
-      <img
-        src="/transcend-logo.png"
-        alt="Transcend"
-        className="h-11 w-auto max-w-[min(100%,320px)] object-contain object-left sm:h-12"
-      />
+    <img
+      src="/transcend-logo.png"
+      alt="Transcend"
+      className="h-9 w-auto max-w-[min(100%,220px)] shrink-0 object-contain object-left opacity-95 dark:opacity-100 sm:h-10"
+    />
+  );
+}
+
+function SiteHeader() {
+  return (
+    <div className="flex flex-col gap-4 border-b border-gray-200 pb-6 dark:border-gray-800 sm:flex-row sm:items-center sm:gap-6">
+      <TranscendLogo />
+      <div className="min-w-0 flex-1">
+        <p className="text-lg font-medium leading-snug text-gray-900 dark:text-gray-100 sm:text-xl">
+          Migrate to Transcend's Claude Enterprise
+        </p>
+        <p className="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+          Internal guide · Bring your context from ChatGPT or personal Claude into your org
+          workspace
+        </p>
+      </div>
     </div>
   );
 }
@@ -316,7 +629,15 @@ export default function ClaudeMigrationGuide() {
     personalization: true,
     connectors: true,
     memory: true,
+    migrateChats: true,
     customGpts: true,
+  });
+  const [tracksPathB, setTracksPathB] = useState({
+    personalization: true,
+    connectors: true,
+    memory: true,
+    migrateChats: true,
+    projects: true,
   });
   const [wizardPhase, setWizardPhase] = useState("chooser");
   const [wizardStepIndex, setWizardStepIndex] = useState(0);
@@ -326,6 +647,15 @@ export default function ClaudeMigrationGuide() {
   const pathATracksList = useMemo(() => {
     return TRACK_ORDER.filter((id) => tracks[id]);
   }, [tracks]);
+
+  /** ChatGPT wizard always ends with a Wrap up step (not a selectable track). */
+  const pathAStepsWithWrap = useMemo(() => {
+    return [...pathATracksList, "wrapUp"];
+  }, [pathATracksList]);
+
+  const pathBTracksList = useMemo(() => {
+    return PATH_B_TRACK_ORDER.filter((id) => tracksPathB[id]);
+  }, [tracksPathB]);
 
   const transitionKey = useMemo(() => {
     return `${screen}-${path ?? "x"}-${wizardPhase}-${wizardStepIndex}`;
@@ -338,7 +668,15 @@ export default function ClaudeMigrationGuide() {
       personalization: true,
       connectors: true,
       memory: true,
+      migrateChats: true,
       customGpts: true,
+    });
+    setTracksPathB({
+      personalization: true,
+      connectors: true,
+      memory: true,
+      migrateChats: true,
+      projects: true,
     });
     setWizardPhase("chooser");
     setWizardStepIndex(0);
@@ -377,7 +715,16 @@ export default function ClaudeMigrationGuide() {
       return `You migrated: ${rest}, and ${last}.`;
     }
     if (path === "personal") {
-      return "You walked through the personal Claude → Enterprise setup.";
+      const items = pathBTracksList.map((id) => PATH_B_TRACK_LABELS[id]);
+      if (items.length === 0) {
+        return "You wrapped up the personal Claude → Enterprise checklist.";
+      }
+      if (items.length === 1) {
+        return `You walked through: ${items[0]} (plus wrap-up) in your personal Claude → Enterprise migration.`;
+      }
+      const last = items[items.length - 1];
+      const rest = items.slice(0, -1).join(", ");
+      return `You walked through: ${rest}, and ${last} (plus wrap-up) in your personal Claude → Enterprise migration.`;
     }
     return "";
   }, [path, pathATracksList]);
@@ -466,6 +813,8 @@ export default function ClaudeMigrationGuide() {
         type="button"
         onClick={() => {
           setPath("chatgpt");
+          setWizardPhase("chooser");
+          setWizardStepIndex(0);
           setScreen("orientation");
         }}
         className="group rounded-xl border border-gray-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-950 dark:hover:border-orange-800 dark:focus-visible:ring-offset-gray-950"
@@ -484,6 +833,8 @@ export default function ClaudeMigrationGuide() {
         type="button"
         onClick={() => {
           setPath("personal");
+          setWizardPhase("chooser");
+          setWizardStepIndex(0);
           setScreen("orientation");
         }}
         className="group rounded-xl border border-gray-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-950 dark:hover:border-teal-800 dark:focus-visible:ring-offset-gray-950"
@@ -519,7 +870,7 @@ export default function ClaudeMigrationGuide() {
           },
           {
             title: "You're moving four kinds of context",
-            body: "Personalization settings, connectors, memory, and your Custom GPTs (rebuilt as Claude Projects). We'll only show the tracks you choose.",
+            body: "Personalization, connectors, memory, important chats, and your Custom GPTs (rebuilt as Claude Projects). We'll only show the tracks you choose.",
           },
           {
             title: "We'll handle the tricky parts together",
@@ -585,15 +936,15 @@ export default function ClaudeMigrationGuide() {
             {[
               {
                 title: "Keep both accounts open for now",
-                body: "Your personal and Enterprise accounts are separate. Stay logged into both until you&apos;re happy with how everything works in Enterprise.",
+                body: "Your personal and Enterprise accounts are separate. Stay logged into both until you're happy with how everything works in Enterprise.",
               },
               {
                 title: "Your data situation is changing — in a good way",
-                body: "Commercial terms cover Transcend&apos;s data, and Anthropic does not use it to train models. Transcend may publish acceptable-use rules for AI at work. On work accounts, administrators may be able to export or review activity, depending on policy.",
+                body: "Commercial terms cover Transcend's data, and Anthropic does not use it to train models. Transcend may publish acceptable-use rules for AI at work. On work accounts, administrators may be able to export or review activity, depending on policy.",
               },
               {
                 title: "What this guide covers",
-                body: "This checklist walks through personalization, connectors, memory, and projects — one topic at a time.",
+                body: "This checklist walks through preferences, connectors, memory, important chats, and projects — one topic at a time.",
               },
             ].map((c) => (
               <div
@@ -648,7 +999,7 @@ export default function ClaudeMigrationGuide() {
         <button
           type="button"
           onClick={() => {
-            setWizardPhase("steps");
+            setWizardPhase("chooser");
             setWizardStepIndex(0);
             setScreen("wizard");
           }}
@@ -661,8 +1012,84 @@ export default function ClaudeMigrationGuide() {
     </div>
   );
 
+  const pathBChooser = (
+    <div className="space-y-6">
+      <h1 className="sr-only">Migration checklist</h1>
+      <WizardStepHeading
+        focus="Tracks"
+        subtitle="Choose what to migrate from personal Claude — we&apos;ll only show what applies."
+      />
+      <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-950">
+        {[
+          {
+            id: "personalization",
+            label: "Personalization",
+            hint: "copy Personal preferences into Enterprise.",
+          },
+          {
+            id: "connectors",
+            label: "Connectors",
+            hint: "re-authenticate Google Drive and other integrations in Enterprise.",
+          },
+          {
+            id: "memory",
+            label: "Memory",
+            hint: "Capabilities → Memory, then the Enterprise memory setup skill.",
+          },
+          {
+            id: "migrateChats",
+            label: "Important chats",
+            hint: "Markdown handoff from personal chats into Enterprise.",
+          },
+          {
+            id: "projects",
+            label: "Projects",
+            hint: "move project instructions, files, and optional thread context.",
+          },
+        ].map((row) => (
+          <label
+            key={row.id}
+            className="flex cursor-pointer items-start gap-3 rounded-lg border border-transparent p-2 transition hover:bg-gray-50 dark:hover:bg-gray-900/80"
+          >
+            <input
+              type="checkbox"
+              checked={tracksPathB[row.id]}
+              onChange={() => toggleTrackPathB(row.id)}
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 dark:border-gray-600 dark:bg-gray-900"
+            />
+            <span className="text-base leading-relaxed text-gray-800 dark:text-gray-200">
+              <span className="font-medium">{row.label}</span>
+              {" — "}
+              <em className="font-normal not-italic text-gray-500 dark:text-gray-500">
+                {row.hint}
+              </em>
+            </span>
+          </label>
+        ))}
+      </div>
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        You&apos;ll always get a <strong>Wrap up</strong> step at the end.
+      </p>
+      <NavRow
+        accent={accent}
+        onBack={() => setScreen("orientation")}
+        onNext={() => {
+          if (pathBTracksList.length === 0) return;
+          setWizardPhase("steps");
+          setWizardStepIndex(0);
+        }}
+        nextLabel="Start migration steps"
+        nextDisabled={pathBTracksList.length === 0}
+      />
+    </div>
+  );
+
   const toggleTrack = (id) => {
     setTracks((t) => ({ ...t, [id]: !t[id] }));
+  };
+
+  const toggleTrackPathB = (id) => {
+    setTracksPathB((t) => ({ ...t, [id]: !t[id] }));
   };
 
   const pathAChooser = (
@@ -690,6 +1117,11 @@ export default function ClaudeMigrationGuide() {
             hint: "everything ChatGPT learned about how you work",
           },
           {
+            id: "migrateChats",
+            label: "Important chats",
+            hint: "copy high-value threads into Enterprise (same idea as personal Claude)",
+          },
+          {
             id: "customGpts",
             label: "Custom GPTs",
             hint: "your tailored assistants, rebuilt as Claude Projects",
@@ -715,6 +1147,9 @@ export default function ClaudeMigrationGuide() {
           </label>
         ))}
       </div>
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        You&apos;ll always get a <strong>Wrap up</strong> step at the end.
+      </p>
       <NavRow
         accent={accent}
         onBack={() => setScreen("orientation")}
@@ -738,73 +1173,71 @@ export default function ClaudeMigrationGuide() {
               focus="Personalization"
               subtitle="Bring your ChatGPT profile into Claude Enterprise"
             />
-            <div className="space-y-4 text-base leading-relaxed text-gray-700 dark:text-gray-300">
-              <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
-                In ChatGPT
-              </h3>
-              <p>
-                Open <strong>Personalization</strong> in ChatGPT and collect what you want
-                to bring over: one <strong>Custom instructions</strong> field (how you want
-                ChatGPT to respond) and one <strong>About you</strong> field (your name,
-                role, how you like to work — labels may vary slightly).
-              </p>
-              <a
-                href={URL.chatgptPersonalization}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-medium text-orange-900 transition hover:bg-orange-100 dark:border-orange-900 dark:bg-orange-950/50 dark:text-orange-100"
-              >
-                Open ChatGPT — Personalization settings
-                <ChevronRight className="h-4 w-4" aria-hidden />
-              </a>
-            </div>
-            <div className="space-y-4 text-base leading-relaxed text-gray-700 dark:text-gray-300">
-              <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
-                In Claude Enterprise
-              </h3>
-              <p>
-                In Claude, you&apos;ll put what you collected into{" "}
-                <strong>Personal preferences</strong> (under General) — one place for how
-                Claude should know you and how it should respond. Paste or rewrite your
-                ChatGPT &quot;About you&quot; and custom instructions there so nothing
-                important is left behind.
-              </p>
-              <a
-                href={URL.claudeGeneral}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
-              >
-                Open Claude — General settings
-                <ChevronRight className="h-4 w-4" aria-hidden />
-              </a>
-            </div>
-            <TipCallout variant="gray">
-              <strong className="font-medium">Optional — haven&apos;t filled out ChatGPT personalization yet?</strong>{" "}
-              Use these Transcend guides to draft your <strong>About you</strong> and{" "}
-              <strong>Custom instructions</strong> in ChatGPT first, then bring the finished
-              text into Claude&apos;s Personal preferences.
-              <span className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <div className="space-y-8">
+              <WizardSubstep number={1} title="Collect your text in ChatGPT">
+                <p>
+                  Open <strong>Personalization</strong> in ChatGPT and collect what you want
+                  to bring over: one <strong>Custom instructions</strong> field (how you want
+                  ChatGPT to respond) and one <strong>About you</strong> field (your name,
+                  role, how you like to work — labels may vary slightly).
+                </p>
                 <a
-                  href={URL.transcendAboutYouDoc}
+                  href={URL.chatgptPersonalization}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 font-medium text-orange-700 underline decoration-orange-200 underline-offset-2 hover:text-orange-800 dark:text-orange-400"
+                  className="inline-flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-medium text-orange-900 transition hover:bg-orange-100 dark:border-orange-900 dark:bg-orange-950/50 dark:text-orange-100"
                 >
-                  About you (Google Doc)
-                  <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+                  Open ChatGPT — Personalization settings
+                  <ChevronRight className="h-4 w-4" aria-hidden />
                 </a>
+              </WizardSubstep>
+              <WizardSubstep number={2} title="Paste into Claude Enterprise">
+                <p>
+                  In Claude, put what you collected into{" "}
+                  <strong>Personal preferences</strong> (under General) — one place for how
+                  Claude should know you and how it should respond. Paste or rewrite your
+                  ChatGPT &quot;About you&quot; and custom instructions there so nothing
+                  important is left behind.
+                </p>
                 <a
-                  href={URL.transcendCustomInstructionsDoc}
+                  href={URL.claudeGeneral}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 font-medium text-orange-700 underline decoration-orange-200 underline-offset-2 hover:text-orange-800 dark:text-orange-400"
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
                 >
-                  Custom instructions (Google Doc)
-                  <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+                  Open Claude — General settings
+                  <ChevronRight className="h-4 w-4" aria-hidden />
                 </a>
-              </span>
-            </TipCallout>
+              </WizardSubstep>
+              <WizardSubstep number={3} title="Optional — draft from Transcend guides first">
+                <TipCallout variant="gray">
+                  <strong className="font-medium">Haven&apos;t filled out ChatGPT personalization yet?</strong>{" "}
+                  Use these Transcend guides to draft your <strong>About you</strong> and{" "}
+                  <strong>Custom instructions</strong> in ChatGPT first, then bring the finished
+                  text into Claude&apos;s Personal preferences.
+                  <span className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                    <a
+                      href={URL.transcendAboutYouDoc}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 font-medium text-orange-700 underline decoration-orange-200 underline-offset-2 hover:text-orange-800 dark:text-orange-400"
+                    >
+                      About you (Google Doc)
+                      <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+                    </a>
+                    <a
+                      href={URL.transcendCustomInstructionsDoc}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 font-medium text-orange-700 underline decoration-orange-200 underline-offset-2 hover:text-orange-800 dark:text-orange-400"
+                    >
+                      Custom instructions (Google Doc)
+                      <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+                    </a>
+                  </span>
+                </TipCallout>
+              </WizardSubstep>
+            </div>
           </div>
         );
       case "connectors":
@@ -814,48 +1247,46 @@ export default function ClaudeMigrationGuide() {
               focus="Connectors"
               subtitle="Mirror what you use in ChatGPT"
             />
-            <div className="space-y-4 text-base leading-relaxed text-gray-700 dark:text-gray-300">
-              <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
-                In ChatGPT
-              </h3>
-              <p>
-                Open <strong>Connectors</strong> (integrations) in ChatGPT and note
-                what&apos;s connected — e.g. Google Drive, calendar, and other tools.
-                You&apos;ll mirror these in Claude next.
-              </p>
-              <a
-                href={URL.chatgptConnectors}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-medium text-orange-900 transition hover:bg-orange-100 dark:border-orange-900 dark:bg-orange-950/50 dark:text-orange-100"
-              >
-                Open ChatGPT — Connectors
-                <ChevronRight className="h-4 w-4" aria-hidden />
-              </a>
+            <div className="space-y-8">
+              <WizardSubstep number={1} title="See what’s connected in ChatGPT">
+                <p>
+                  Open <strong>Connectors</strong> (integrations) in ChatGPT and note
+                  what&apos;s connected — e.g. Google Drive, calendar, and other tools.
+                  You&apos;ll mirror these in Claude next.
+                </p>
+                <a
+                  href={URL.chatgptConnectors}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-medium text-orange-900 transition hover:bg-orange-100 dark:border-orange-900 dark:bg-orange-950/50 dark:text-orange-100"
+                >
+                  Open ChatGPT — Connectors
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                </a>
+              </WizardSubstep>
+              <WizardSubstep number={2} title="Re-authenticate in Claude Enterprise">
+                <p>
+                  In Claude, go to <strong>Connectors</strong> and sign in again for each
+                  service you use. It&apos;s usually just re-authentication — no full
+                  reconfiguration.
+                </p>
+                <a
+                  href={URL.claudeConnectors}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
+                >
+                  Open Claude — Connectors
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                </a>
+              </WizardSubstep>
+              <WizardSubstep number={3} title="Quick timing">
+                <TipCallout>
+                  <strong className="font-medium">Tip:</strong> Budget about two minutes per
+                  connector — quick win.
+                </TipCallout>
+              </WizardSubstep>
             </div>
-            <div className="space-y-4 text-base leading-relaxed text-gray-700 dark:text-gray-300">
-              <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
-                In Claude Enterprise
-              </h3>
-              <p>
-                In Claude, go to <strong>Connectors</strong> and sign in again for each
-                service you use. It&apos;s usually just re-authentication — no full
-                reconfiguration.
-              </p>
-              <a
-                href={URL.claudeConnectors}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
-              >
-                Open Claude — Connectors
-                <ChevronRight className="h-4 w-4" aria-hidden />
-              </a>
-            </div>
-            <TipCallout>
-              <strong className="font-medium">Tip:</strong> Budget about two minutes per
-              connector — quick win.
-            </TipCallout>
           </div>
         );
       case "memory":
@@ -863,131 +1294,139 @@ export default function ClaudeMigrationGuide() {
           <div className="space-y-6">
             <WizardStepHeading
               focus="Memory"
-              subtitle="Export from ChatGPT and import into Claude"
+              subtitle="Export from ChatGPT, then import with the Enterprise memory setup skill"
             />
-            <div className="space-y-4 text-base leading-relaxed text-gray-700 dark:text-gray-300">
-              <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                  ChatGPT: clean up saved memory
-                </p>
-                <p className="mt-2">
+            <div className="space-y-8">
+              <WizardSubstep number={1} title="Clean up saved memory in ChatGPT">
+                <p>
                   In <strong>ChatGPT → Settings → Personalization → Manage memory</strong>,
                   delete anything outdated — old projects, stale preferences, things that
                   are no longer true. You don&apos;t want to carry noise into Claude.
                 </p>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                  ChatGPT: export what it remembers
-                </p>
-                <p className="mt-2">
+              </WizardSubstep>
+              <WizardSubstep number={2} title="Export what ChatGPT remembers">
+                <p>
                   Paste the prompt below into a <strong>new ChatGPT chat</strong>, run it,
-                  and copy the full output.
+                  and copy the full output. The box scrolls if you need to read the whole
+                  thing — use <strong>Copy</strong> to grab everything at once.
                 </p>
                 <div className="mt-3">
-                  <CopyableBlock text={MEMORY_EXPORT_PROMPT} />
+                  <CopyableBlock text={MEMORY_EXPORT_PROMPT} compact />
                 </div>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                  Claude Enterprise: import memory
-                </p>
-                <p className="mt-2">
-                  Use Anthropic&apos;s{" "}
-                  <strong>memory import</strong> flow: open the page, follow the steps,
-                  and paste what you copied from ChatGPT. If your screen looks different
-                  from this guide, follow the import page — it is always up to date.
-                </p>
+                <div className="mt-6 space-y-3">
+                  <p className="font-medium text-gray-900 dark:text-gray-100">
+                    If that doesn&apos;t give you what you need
+                  </p>
+                  <p>
+                    Try this alternate prompt instead (more structured; asks for inferred
+                    context as well as stored memory):
+                  </p>
+                  <CopyableBlock text={MEMORY_EXPORT_PROMPT_FALLBACK} compact />
+                </div>
+              </WizardSubstep>
+              <WizardSubstep number={3} title="Import in Claude Enterprise">
+                <EnterpriseMemorySkillImportBlock />
+              </WizardSubstep>
+              <WizardSubstep number={4} title="Reference">
                 <a
-                  href={URL.claudeImportMemory}
+                  href={URL.supportChatMemory}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-3 inline-flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-medium text-orange-900 transition hover:bg-orange-100 dark:border-orange-900 dark:bg-orange-950/50 dark:text-orange-100"
+                  className="font-medium text-gray-600 underline decoration-gray-300 underline-offset-2 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
                 >
-                  Open Claude memory import
-                  <ChevronRight className="h-4 w-4" aria-hidden />
+                  Help: Chat search &amp; memory
                 </a>
-              </div>
+              </WizardSubstep>
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-base">
-              <a
-                href={URL.supportChatMemory}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-gray-600 underline decoration-gray-300 underline-offset-2 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                Help: Chat search &amp; memory
-              </a>
-            </div>
-            <TipCallout>
-              <strong className="font-medium">If import doesn&apos;t match your UI:</strong>{" "}
-              paste the important lines into <strong>Personal preferences</strong> or a
-              fresh chat (&quot;Here&apos;s what to remember about me…&quot;). Goal:
-              accurate context in Enterprise.
-            </TipCallout>
-            <TipCallout variant="gray">
-              <strong className="font-medium">Tip:</strong> Memory can take a little time
-              to feel fully loaded. Later, start a new chat and ask &quot;What do you know
-              about me?&quot; to verify.
-            </TipCallout>
+          </div>
+        );
+      case "migrateChats":
+        return (
+          <div className="space-y-6">
+            <WizardStepHeading
+              focus="Important chats"
+              subtitle="Extraction runs in ChatGPT — one Markdown handoff into Enterprise"
+            />
+            <MigrateImportantChatsContent variant="chatgpt" accent={accent} />
           </div>
         );
       case "customGpts":
         return (
-          <div className="space-y-5">
+          <div className="space-y-6">
             <WizardStepHeading
               focus="Projects"
               subtitle="Rebuild Custom GPTs as Claude Projects"
             />
-            <div className="space-y-4 text-base leading-relaxed text-gray-700 dark:text-gray-300">
-              <p>
-                Claude Projects are the equivalent of Custom GPTs — and in a lot of ways
-                more powerful. Here&apos;s how to move each one over.
-              </p>
-              <p>For each Custom GPT you want to migrate:</p>
-              <ol className="list-decimal space-y-2 pl-5">
-                <li>Open the GPT in ChatGPT → click <strong>Configure</strong></li>
-                <li>
-                  Copy the <strong>Instructions</strong> (system prompt) and the{" "}
-                  <strong>Description</strong> — in Claude, put instructions in{" "}
-                  <strong>Project instructions</strong> and the description in{" "}
-                  <strong>Project description</strong> so people know what the project is
-                  for.
-                </li>
-                <li>Download any files in the <strong>Knowledge</strong> section</li>
-                <li>
-                  In Claude Enterprise, go to <strong>Projects → New project</strong>
-                </li>
-                <li>
-                  Paste instructions and description, then upload your knowledge files
-                </li>
-              </ol>
-              <TipCallout variant="gray">
-                <strong className="font-medium">Heads up:</strong> Custom GPT{" "}
-                <strong>conversation starters</strong> don&apos;t have a direct
-                equivalent in Projects today — you lose that shortcut list. You can fold
-                starter ideas into <strong>project instructions</strong> or the
-                description so teammates still know how to begin.
-              </TipCallout>
-              <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
-                Share the project when it&apos;s ready
-              </h3>
-              <p>
-                After you create the project, open sharing: invite{" "}
-                <strong>specific teammates</strong> who should use it, or share{" "}
-                <strong>across Transcend</strong> where that makes sense so others can
-                find and build on your setup.
-              </p>
+            <div className="space-y-8">
+              <WizardSubstep number={1} title="Gather everything from each Custom GPT">
+                <p>
+                  Claude Projects are the equivalent of Custom GPTs — and in a lot of ways
+                  more powerful. For each Custom GPT you want to migrate:
+                </p>
+                <ol className="list-decimal space-y-2 pl-5">
+                  <li>Open the GPT in ChatGPT → click <strong>Configure</strong></li>
+                  <li>
+                    Copy the <strong>Instructions</strong> (system prompt) and the{" "}
+                    <strong>Description</strong> — in Claude, put instructions in{" "}
+                    <strong>Project instructions</strong> and the description in{" "}
+                    <strong>Project description</strong> so people know what the project is
+                    for.
+                  </li>
+                  <li>Download any files in the <strong>Knowledge</strong> section</li>
+                </ol>
+                <TipCallout variant="gray">
+                  <strong className="font-medium">Heads up:</strong> Custom GPT{" "}
+                  <strong>conversation starters</strong> don&apos;t have a direct
+                  equivalent in Projects today — you lose that shortcut list. You can fold
+                  starter ideas into <strong>project instructions</strong> or the
+                  description so teammates still know how to begin.
+                </TipCallout>
+              </WizardSubstep>
+              <WizardSubstep number={2} title="Create the project in Claude Enterprise">
+                <p>
+                  In Claude Enterprise, go to <strong>Projects → New project</strong>.
+                  Paste instructions and description, then upload your knowledge files.
+                </p>
+              </WizardSubstep>
+              <WizardSubstep number={3} title="Share when it&apos;s ready">
+                <p>
+                  After you create the project, open sharing: invite{" "}
+                  <strong>specific teammates</strong> who should use it, or share{" "}
+                  <strong>across Transcend</strong> where that makes sense so others can
+                  find and build on your setup.
+                </p>
+              </WizardSubstep>
+              <WizardSubstep number={4} title="Files and testing">
+                <TipCallout>
+                  <strong className="font-medium">Important:</strong> Claude requires files
+                  to be PDFs. If your knowledge files are .docx, Google Docs, or other
+                  formats, convert them to PDF before uploading.
+                </TipCallout>
+                <p className="text-gray-600 dark:text-gray-400">
+                  After uploading, test with a few of your most common prompts and adjust
+                  until it feels right.
+                </p>
+              </WizardSubstep>
             </div>
-            <TipCallout>
-              <strong className="font-medium">Important:</strong> Claude requires files
-              to be PDFs. If your knowledge files are .docx, Google Docs, or other
-              formats, convert them to PDF before uploading.
-            </TipCallout>
-            <p className="text-base leading-relaxed text-gray-600 dark:text-gray-400">
-              After uploading, test with a few of your most common prompts and adjust
-              until it feels right.
-            </p>
+          </div>
+        );
+      case "wrapUp":
+        return (
+          <div className="space-y-6">
+            <WizardStepHeading
+              focus="Wrap up"
+              subtitle="You&apos;re done with this checklist"
+            />
+            <div className="space-y-8">
+              <WizardSubstep number={1} title="Migration checklist complete">
+                <p>
+                  You&apos;ve finished the steps you selected. For day-to-day work, use
+                  whichever tool you prefer — <strong>Claude Enterprise</strong> or{" "}
+                  <strong>ChatGPT Enterprise</strong> — or use both. There&apos;s no need to
+                  pick only one; choose what feels most comfortable for each task.
+                </p>
+              </WizardSubstep>
+            </div>
           </div>
         );
       default:
@@ -995,186 +1434,111 @@ export default function ClaudeMigrationGuide() {
     }
   };
 
-  const pathBSteps = [
+  const pathBSteps = useMemo(
+    () => [
     {
-      focus: "Review",
-      subtitle: "See what you're bringing from personal Claude",
-      body: (
-        <div className="space-y-5">
-          <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
-            In your <strong>personal</strong> Claude account, spend a few minutes
-            checking:
-          </p>
-          <ul className="list-disc space-y-3 pl-5 text-base leading-relaxed text-gray-700 dark:text-gray-300">
-            <li>
-              <strong>Projects</strong> — which ones are you actively using? Open{" "}
-              <a
-                href={URL.claudeHome}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-teal-700 underline decoration-teal-200 underline-offset-2 hover:text-teal-800 dark:text-teal-400"
-              >
-                claude.ai
-              </a>{" "}
-              to see them, or read{" "}
-              <a
-                href={URL.supportProjects}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-teal-700 underline decoration-teal-200 underline-offset-2 hover:text-teal-800 dark:text-teal-400"
-              >
-                how projects work
-              </a>
-              .
-            </li>
-            <li>
-              <strong>Personal preferences</strong> —{" "}
-              <strong>Settings → Account → Personal preferences</strong>.{" "}
-              <a
-                href={URL.claudeGeneral}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-medium text-teal-700 underline decoration-teal-200 underline-offset-2 hover:text-teal-800 dark:text-teal-400"
-              >
-                Open settings
-                <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
-              </a>
-            </li>
-            <li>
-              <strong>Connectors</strong> — <strong>Settings → Connectors</strong>.{" "}
-              <a
-                href={URL.claudeConnectors}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-medium text-teal-700 underline decoration-teal-200 underline-offset-2 hover:text-teal-800 dark:text-teal-400"
-              >
-                Open Connectors
-                <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
-              </a>
-            </li>
-            <li>
-              <strong>Memory</strong> — under Capabilities.{" "}
-              <a
-                href={URL.claudeCapabilities}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-medium text-teal-700 underline decoration-teal-200 underline-offset-2 hover:text-teal-800 dark:text-teal-400"
-              >
-                Open Capabilities &amp; memory settings
-                <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
-              </a>
-            </li>
-          </ul>
-          <TipCallout>
-            <strong className="font-medium">Tip:</strong> Apply the 80/20 rule here.
-            Only migrate what you actually use. Old projects and stale memory can stay
-            behind — you are not losing them, just not bringing them forward.
-          </TipCallout>
-        </div>
-      ),
-    },
-    {
+      id: "personalization",
       focus: "Personalization",
       subtitle: "Copy preferences into Enterprise",
       body: (
-        <div className="space-y-5">
-          <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
-            In your <strong>personal</strong> account, open{" "}
-            <strong>Settings → Account → Personal preferences</strong>. Copy everything
-            — your role, how you like responses formatted, any always/never behaviors.
-          </p>
-          <a
-            href={URL.claudeGeneral}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
-          >
-            Open Personal preferences (personal account)
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          </a>
-          <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
-            In your <strong>Enterprise</strong> account, go to the same place and
-            rewrite from scratch. Write in first person, be direct.
-          </p>
-          <a
-            href={URL.claudeGeneral}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
-          >
-            Open Personal preferences (Enterprise)
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          </a>
-          <TipCallout>
-            <strong className="font-medium">Tip:</strong> Use the control in the{" "}
-            <strong>bottom-left corner</strong> (your initials) to switch between your
-            personal and Enterprise accounts. A blue checkmark shows which account is
-            active.
-          </TipCallout>
-          <TipCallout variant="gray">
-            <strong className="font-medium">Tip:</strong> Dialing in preferences early
-            saves rework later — do this step before heavy connectors or project moves.
-          </TipCallout>
+        <div className="space-y-8">
+          <WizardSubstep number={1} title="Copy from your personal account">
+            <p>
+              <strong>Settings → Account → Personal preferences</strong>. Copy everything
+              — your role, how you like responses formatted, any always/never behaviors.
+            </p>
+            <a
+              href={URL.claudeGeneral}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
+            >
+              Open Personal preferences (personal account)
+              <ChevronRight className="h-4 w-4" aria-hidden />
+            </a>
+          </WizardSubstep>
+          <WizardSubstep number={2} title="Paste into Enterprise">
+            <p>
+              In your <strong>Enterprise</strong> account, go to the same place and
+              rewrite from scratch. Write in first person, be direct.
+            </p>
+            <a
+              href={URL.claudeGeneral}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
+            >
+              Open Personal preferences (Enterprise)
+              <ChevronRight className="h-4 w-4" aria-hidden />
+            </a>
+          </WizardSubstep>
+          <WizardSubstep number={3} title="Switch accounts">
+            <TipCallout>
+              <strong className="font-medium">Tip:</strong> Use the control in the{" "}
+              <strong>bottom-left corner</strong> (your initials) to switch between your
+              personal and Enterprise accounts. A blue checkmark shows which account is
+              active.
+            </TipCallout>
+          </WizardSubstep>
         </div>
       ),
     },
     {
+      id: "connectors",
       focus: "Connectors",
       subtitle: "Re-authenticate in Enterprise",
       body: (
-        <div className="space-y-4 text-base leading-relaxed text-gray-700 dark:text-gray-300">
-          <p>
-            In your personal account, open <strong>Settings → Connectors</strong> and see
-            what is already connected.
-          </p>
-          <a
-            href={URL.claudeConnectors}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
-          >
-            Open Connectors (personal)
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          </a>
-          <p>
-            In your Enterprise account: <strong>Settings → Connectors</strong>.
-            Sign in again for each connector. Usually that is only a fresh login — no full
-            setup from scratch.
-          </p>
-          <a
-            href={URL.claudeConnectors}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
-          >
-            Open Connectors (Enterprise)
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          </a>
+        <div className="space-y-8">
+          <WizardSubstep number={1} title="See what’s connected in personal Claude">
+            <p>
+              Open <strong>Settings → Connectors</strong> and see what is already
+              connected.
+            </p>
+            <a
+              href={URL.claudeConnectors}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
+            >
+              Open Connectors (personal)
+              <ChevronRight className="h-4 w-4" aria-hidden />
+            </a>
+          </WizardSubstep>
+          <WizardSubstep number={2} title="Re-authenticate in Enterprise">
+            <p>
+              In your Enterprise account: <strong>Settings → Connectors</strong>.
+              Sign in again for each connector. Usually that is only a fresh login — no full
+              setup from scratch.
+            </p>
+            <a
+              href={URL.claudeConnectors}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
+            >
+              Open Connectors (Enterprise)
+              <ChevronRight className="h-4 w-4" aria-hidden />
+            </a>
+          </WizardSubstep>
         </div>
       ),
     },
     {
+      id: "memory",
       focus: "Memory",
-      subtitle: "Rebuild context in Enterprise",
+      subtitle: "Copy from personal Claude, then import with the Enterprise memory setup skill",
       body: (
-        <div className="space-y-5">
-          <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
-            Memory does not transfer between your personal and Enterprise accounts; they
-            are separate. The screens for memory may change between app releases — focus
-            on the goal: Claude in Enterprise should reflect how you work, not every old
-            detail from personal.
-          </p>
-          <p className="text-base font-medium text-gray-900 dark:text-gray-100">
-            Practical ways to rebuild context:
-          </p>
-          <div className="space-y-3 text-base leading-relaxed text-gray-700 dark:text-gray-300">
+        <div className="space-y-8">
+          <WizardSubstep number={1} title="Understand the split">
             <p>
-              <strong>Option A (quick):</strong> In your first few Enterprise chats, say
-              what matters — your role, how you like answers, active projects. Claude
-              will start forming useful context from real work.
+              Memory does not transfer automatically between your personal and Enterprise
+              accounts — they are separate. Use the <strong>Enterprise memory setup</strong>{" "}
+              skill in Enterprise after you export from Capabilities below.
             </p>
+          </WizardSubstep>
+          <WizardSubstep number={2} title="Copy from personal Capabilities">
             <p>
-              <strong>Option B (thorough):</strong> In your personal account, open{" "}
+              In your <strong>personal</strong> account, open{" "}
               <a
                 href={URL.claudeCapabilities}
                 target="_blank"
@@ -1183,116 +1547,144 @@ export default function ClaudeMigrationGuide() {
               >
                 Settings → Capabilities
               </a>{" "}
-              and review <strong>Memory</strong> — skim what is worth keeping. In
-              Enterprise, re-enter those facts under{" "}
-              <strong>Personal preferences</strong> and in natural language in chat
-              (&quot;Please remember that I…&quot;). If you see a dedicated memory list,
-              tidy it there too.
+              (<span className="whitespace-nowrap">claude.ai/settings/capabilities</span>
+              ). Under <strong>Memory</strong>, review what is stored and copy anything
+              you want in Enterprise (or save it to a file if that is easier).
             </p>
-          </div>
-          <TipCallout>
-            <strong className="font-medium">Tip:</strong> Claude&apos;s memory is
-            designed to be visible and editable over time. Spending a few minutes
-            up front saves friction later — especially for recurring workflows.
-          </TipCallout>
+          </WizardSubstep>
+          <WizardSubstep number={3} title="Import in Claude Enterprise">
+            <EnterpriseMemorySkillImportBlock />
+          </WizardSubstep>
         </div>
       ),
     },
     {
+      id: "migrateChats",
+      focus: "Important chats",
+      subtitle: "Run extraction in personal Claude, then paste the Markdown handoff into Enterprise",
+      body: <MigrateImportantChatsContent variant="claude" accent={accent} />,
+    },
+    {
+      id: "projects",
       focus: "Projects",
       subtitle: "Move each project into Enterprise",
       body: (
-        <div className="space-y-5">
-          <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
-            For each project you want in Enterprise, use the same building blocks you used
-            the first time:
-          </p>
-          <ol className="list-decimal space-y-2 pl-5 text-base leading-relaxed text-gray-700 dark:text-gray-300">
-            <li>
+        <div className="space-y-8">
+          <WizardSubstep number={1} title="Copy from your personal project">
+            <p>
               In your <strong>personal</strong> project, copy the <strong>project name</strong>,{" "}
               <strong>description</strong>, and <strong>project instructions</strong> (or export
-              them if your UI offers that).
-            </li>
-            <li>Download any <strong>knowledge base</strong> files.</li>
-            <li>
-              In <strong>Enterprise</strong>, create a new project. Use the same{" "}
-              <strong>name</strong> and <strong>description</strong> as in personal.
-            </li>
-            <li>
-              Paste <strong>project instructions</strong> and re-upload files (PDFs where
-              required — see below).
-            </li>
-          </ol>
-          <div className="space-y-3 rounded-xl border border-teal-200/80 bg-teal-50/40 p-4 dark:border-teal-900 dark:bg-teal-950/30">
-            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
-              Optional — carry over chat history as context
-            </h3>
-            <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
-              After the Enterprise project exists with instructions and files, open a
-              chat <strong>inside your personal project</strong> (the old one), run the
-              prompt below, copy the output, then start a <strong>new chat inside your new
-              Enterprise project</strong> and paste it there. That brings useful thread
-              context into Enterprise without pasting a long block into project
-              instructions.
+              them if your UI offers that). Download any <strong>knowledge base</strong> files.
             </p>
-            <CopyableBlock text={OPTIONAL_PROJECT_CHAT_HISTORY_PROMPT} />
-          </div>
-          <TipCallout>
-            <strong className="font-medium">Important:</strong> Claude requires files to
-            be PDFs. Convert any .docx, Google Docs, or other formats before uploading.
-          </TipCallout>
-          <a
-            href={URL.supportProjects}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-base font-medium text-teal-700 underline decoration-teal-200 underline-offset-2 hover:text-teal-800 dark:text-teal-400"
-          >
-            Help: Create and manage projects
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          </a>
+          </WizardSubstep>
+          <WizardSubstep number={2} title="Create the project in Enterprise">
+            <p>
+              In <strong>Enterprise</strong>, create a new project. Use the same{" "}
+              <strong>name</strong> and <strong>description</strong> as in personal. Paste{" "}
+              <strong>project instructions</strong> and <strong>re-upload files</strong>{" "}
+              (PDFs where required).
+            </p>
+          </WizardSubstep>
+          <WizardSubstep number={3} title="Optional — carry over chat history as context">
+            <div className="space-y-3 rounded-xl border border-teal-200/80 bg-teal-50/40 p-4 dark:border-teal-900 dark:bg-teal-950/30">
+              <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
+                After the Enterprise project exists with instructions and files, open a
+                chat <strong>inside your personal project</strong> (the old one), run the
+                prompt below, copy the output, then start a <strong>new chat inside your new
+                Enterprise project</strong> and paste it there. That brings useful thread
+                context into Enterprise without pasting a long block into project
+                instructions.
+              </p>
+              <CopyableBlock text={OPTIONAL_PROJECT_CHAT_HISTORY_PROMPT} />
+            </div>
+          </WizardSubstep>
+          <WizardSubstep number={4} title="Files and help">
+            <TipCallout>
+              <strong className="font-medium">Important:</strong> Claude requires files to
+              be PDFs. Convert any .docx, Google Docs, or other formats before uploading.
+            </TipCallout>
+            <a
+              href={URL.supportProjects}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-base font-medium text-teal-700 underline decoration-teal-200 underline-offset-2 hover:text-teal-800 dark:text-teal-400"
+            >
+              Help: Create and manage projects
+              <ChevronRight className="h-4 w-4" aria-hidden />
+            </a>
+          </WizardSubstep>
         </div>
       ),
     },
     {
+      id: "wrapUp",
       focus: "Wrap up",
       subtitle: "What to do next",
       body: (
-        <div className="space-y-5">
-          <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
-            Once you&apos;ve confirmed everything feels good in Enterprise, you&apos;re
-            done with the migration checklist. There&apos;s no requirement to change your
-            personal account — many people keep it for non-work experiments, side
-            projects, or backups.
-          </p>
-          <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
-            For Transcend work, use the <strong>Enterprise</strong> org so your chats get
-            the right data protections, sharing, and policy context. You can keep your
-            personal Claude account for as long as you still find it useful.
-          </p>
+        <div className="space-y-8">
+          <WizardSubstep number={1} title="You&apos;re done with the checklist">
+            <p>
+              Once you&apos;ve confirmed everything feels good in Enterprise, you&apos;re
+              done with the migration checklist. There&apos;s no requirement to change your
+              personal account — many people keep it for non-work experiments, side
+              projects, or backups.
+            </p>
+          </WizardSubstep>
+          <WizardSubstep number={2} title="Where to work day to day">
+            <p>
+              For Transcend work, use the <strong>Enterprise</strong> org so your chats get
+              the right data protections, sharing, and policy context. You can keep your
+              personal Claude account for as long as you still find it useful.
+            </p>
+          </WizardSubstep>
         </div>
       ),
     },
-  ];
+    ],
+    [accent],
+  );
+
+  const pathBStepsFiltered = useMemo(() => {
+    return pathBSteps.filter((step) => {
+      if (step.id === "wrapUp") return true;
+      return tracksPathB[step.id];
+    });
+  }, [pathBSteps, tracksPathB]);
+
+  useEffect(() => {
+    if (path !== "personal" || wizardPhase !== "steps") return;
+    const max = pathBStepsFiltered.length - 1;
+    if (max < 0) return;
+    setWizardStepIndex((i) => Math.min(i, max));
+  }, [path, wizardPhase, pathBStepsFiltered.length]);
+
+  useEffect(() => {
+    if (path !== "chatgpt" || wizardPhase !== "steps") return;
+    const max = pathAStepsWithWrap.length - 1;
+    if (max < 0) return;
+    setWizardStepIndex((i) => Math.min(i, max));
+  }, [path, wizardPhase, pathAStepsWithWrap.length]);
 
   const pathAWizardSteps = () => {
-    const total = pathATracksList.length;
-    const currentId = pathATracksList[wizardStepIndex];
-    const atLast = wizardStepIndex >= total - 1;
+    const total = pathAStepsWithWrap.length;
+    const safeIndex = Math.min(wizardStepIndex, Math.max(0, total - 1));
+    const currentId = pathAStepsWithWrap[safeIndex];
+    const atLast = safeIndex >= total - 1;
 
     const goBack = () => {
-      if (wizardStepIndex > 0) setWizardStepIndex((i) => i - 1);
+      if (safeIndex > 0) setWizardStepIndex((i) => i - 1);
       else setWizardPhase("chooser");
     };
 
     const goNext = () => {
       if (atLast) setScreen("gaining");
-      else setWizardStepIndex((i) => i + 1);
+      else setWizardStepIndex((i) => Math.min(i + 1, total - 1));
     };
 
     return (
       <div className="space-y-6">
         <h1 className="sr-only">Migration checklist</h1>
-        <ProgressDots current={wizardStepIndex} total={total} accent={accent} />
+        <ProgressDots current={safeIndex} total={total} accent={accent} />
         {pathAStepContent(currentId)}
         <NavRow
           accent={accent}
@@ -1305,13 +1697,14 @@ export default function ClaudeMigrationGuide() {
   };
 
   const pathBWizard = () => {
-    const total = pathBSteps.length;
-    const step = pathBSteps[wizardStepIndex];
-    const atLast = wizardStepIndex >= total - 1;
+    const total = pathBStepsFiltered.length;
+    const safeIndex = Math.min(wizardStepIndex, Math.max(0, total - 1));
+    const step = pathBStepsFiltered[safeIndex];
+    const atLast = safeIndex >= total - 1;
 
     const goBack = () => {
-      if (wizardStepIndex > 0) setWizardStepIndex((i) => i - 1);
-      else setScreen("orientation");
+      if (safeIndex > 0) setWizardStepIndex((i) => i - 1);
+      else setWizardPhase("chooser");
     };
 
     const goNext = () => {
@@ -1319,10 +1712,25 @@ export default function ClaudeMigrationGuide() {
       else setWizardStepIndex((i) => i + 1);
     };
 
+    if (!step || total === 0) {
+      return (
+        <div className="space-y-4 text-base text-gray-700 dark:text-gray-300">
+          <p>No steps selected. Go back and choose at least one track.</p>
+          <button
+            type="button"
+            onClick={() => setWizardPhase("chooser")}
+            className={`rounded-lg px-4 py-2 text-sm font-medium text-white ${accent.btn}`}
+          >
+            Back to tracks
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <h1 className="sr-only">Migration checklist</h1>
-        <ProgressDots current={wizardStepIndex} total={total} accent={accent} />
+        <ProgressDots current={safeIndex} total={total} accent={accent} />
         <div>
           <WizardStepHeading focus={step.focus} subtitle={step.subtitle} />
           <div className="mt-4">{step.body}</div>
@@ -1546,8 +1954,12 @@ export default function ClaudeMigrationGuide() {
       main = pathAChooser;
     } else if (path === "chatgpt") {
       main = pathAWizardSteps();
-    } else {
+    } else if (path === "personal" && wizardPhase === "chooser") {
+      main = pathBChooser;
+    } else if (path === "personal") {
       main = pathBWizard();
+    } else {
+      main = null;
     }
   } else if (screen === "gaining") {
     main = gainingScreen;
@@ -1560,11 +1972,8 @@ export default function ClaudeMigrationGuide() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-      <div className="mb-6 flex flex-col gap-3 border-b border-gray-200 pb-6 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
-        <TranscendLogo />
-        <p className="max-w-sm text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-          Internal guide · Move your context into Transcend&apos;s Claude Enterprise org
-        </p>
+      <div className="mb-6">
+        <SiteHeader />
       </div>
       {showGlobalBack && (
         <FlowBackButton onClick={handleFlowBack} label={flowBackLabel} />
