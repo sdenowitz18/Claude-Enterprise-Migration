@@ -351,30 +351,112 @@ function WizardSubstep({ number, title, children }) {
   );
 }
 
-/** Shared steps: bring exported memory into Enterprise via the org “Enterprise memory setup” skill. */
-function EnterpriseMemorySkillImportBlock() {
+function MemoryCapabilityExampleFigure({ src, alt, caption }) {
   return (
-    <div className="space-y-4">
-      <div>
+    <figure className="mx-auto w-full max-w-md shrink-0 md:mx-0 md:w-[min(100%,320px)]">
+      <img
+        src={src}
+        alt={alt}
+        className="w-full rounded-lg border border-gray-200 bg-gray-50 shadow-sm dark:border-gray-600 dark:bg-gray-900"
+      />
+      <figcaption className="mt-2 text-xs leading-snug text-gray-500 dark:text-gray-400">
+        {caption}
+      </figcaption>
+    </figure>
+  );
+}
+
+/**
+ * Shared: bring exported memory into Claude Enterprise. Capabilities → Memory can show
+ * either a full editor (“View and edit memory”) or an early empty state — cover both.
+ */
+function EnterpriseMemoryImportInEnterpriseBlock() {
+  return (
+    <div className="space-y-6">
+      <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
+        In <strong>Claude Enterprise</strong>, open{" "}
+        <a
+          href={URL.claudeCapabilities}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-teal-700 underline decoration-teal-200 underline-offset-2 hover:text-teal-800 dark:text-teal-400"
+        >
+          Settings → Capabilities
+        </a>{" "}
+        and open <strong>Memory</strong>. The screen you get is not always the same —
+        especially right after you first join the org, or before you have much history in
+        Enterprise.
+      </p>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-950">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
+          <div className="min-w-0 flex-1 space-y-3">
+            <p className="font-medium text-gray-900 dark:text-gray-100">
+              If you can use <strong>View and edit memory</strong> (or similar)
+            </p>
+            <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
+              When the UI shows something like <strong>Memory from your chats</strong> (with a
+              preview snippet) and you can open it to view, add, or edit what Claude remembers,
+              use that to <strong>paste or upload</strong> what you exported from ChatGPT or
+              personal Claude. That is usually the fastest path once that editor is available.
+            </p>
+          </div>
+          <MemoryCapabilityExampleFigure
+            src="/memory-capabilities-editable.png"
+            alt="Claude Capabilities memory card showing Memory from your chats with a text preview — you can open this to edit memory."
+            caption="Example: this layout means you can open memory and add or edit entries directly."
+          />
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-950">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
+          <div className="min-w-0 flex-1 space-y-3">
+            <p className="font-medium text-gray-900 dark:text-gray-100">
+              If you only see an empty or &quot;not much yet&quot; message
+            </p>
+            <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
+              Some accounts first show <strong>What does Claude know about you?</strong> with
+              text like &quot;Not much, yet…&quot; and there is <strong>no</strong> real way to
+              add or manage memories there yet. In that case, bring your export in with the{" "}
+              <strong>Enterprise memory setup</strong> skill below. After you have used
+              Enterprise for a bit, check again — the fuller memory editor often appears later.
+            </p>
+          </div>
+          <MemoryCapabilityExampleFigure
+            src="/memory-capabilities-empty-state.png"
+            alt="Claude Capabilities memory card showing What does Claude know about you and Not much yet — this empty state cannot be used to import memory directly."
+            caption="Example: this layout has no memory editor yet — use the Enterprise memory setup skill instead."
+          />
+        </div>
+      </div>
+
+      <div className="space-y-3">
         <p className="font-medium text-gray-900 dark:text-gray-100">
-          Claude Enterprise: import with the Enterprise memory setup skill
+          Enterprise memory setup skill (when settings are not enough, or you prefer a guided
+          import)
         </p>
-        <p className="mt-2 text-base leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
           In <strong>Claude Enterprise</strong>, open a <strong>new chat</strong>. In the
-          message box, type <strong>/</strong> (forward slash — the slash key, not
-          backslash <strong>\</strong>) to open the slash menu. In the list that appears,
-          click <strong>Enterprise memory setup</strong> to start the skill. That is the
-          org skill for importing memory from another tool — it will ask you to provide what
-          you exported (paste or upload), let you review and make edits or adjustments,
-          then add it to your Enterprise memory when you confirm.
+          message box, type <strong>/</strong> (forward slash — the slash key, not backslash{" "}
+          <strong>\</strong>) to open the slash menu. In the list that appears, click{" "}
+          <strong>Enterprise memory setup</strong> to start the skill. It will ask you to
+          provide what you exported (paste or upload), let you review and make edits or
+          adjustments, then add it to your Enterprise memory when you confirm.
         </p>
       </div>
+
+      <TipCallout variant="gray">
+        <strong className="font-medium">Optional:</strong> You can still run{" "}
+        <strong>Enterprise memory setup</strong> even when <strong>View and edit memory</strong>{" "}
+        is available — helpful if you want a guided flow or to double-check before saving.
+      </TipCallout>
+
       <TipCallout>
-        <strong className="font-medium">Tip:</strong> Uploading and applying memory can
-        take a little time; that is normal. Wait for the flow to finish — it should
-        complete successfully. Memory can take a short while to feel fully reflected across
-        chats; later, start a new chat and ask &quot;What do you know about me?&quot; to
-        verify.
+        <strong className="font-medium">Tip:</strong> Uploading and applying memory can take a
+        little time; that is normal. Wait for the flow to finish — it should complete
+        successfully. Memory can take a short while to feel fully reflected across chats;
+        later, start a new chat and ask &quot;What do you know about me?&quot; to verify.
       </TipCallout>
     </div>
   );
@@ -1034,7 +1116,7 @@ export default function ClaudeMigrationGuide() {
           {
             id: "memory",
             label: "Memory",
-            hint: "Capabilities → Memory, then the Enterprise memory setup skill.",
+            hint: "Capabilities → Memory — paste in settings when you can, or use the Enterprise memory setup skill.",
           },
           {
             id: "migrateChats",
@@ -1294,7 +1376,7 @@ export default function ClaudeMigrationGuide() {
           <div className="space-y-6">
             <WizardStepHeading
               focus="Memory"
-              subtitle="Export from ChatGPT, then import with the Enterprise memory setup skill"
+              subtitle="Export from ChatGPT, then import in Enterprise — settings or the org memory setup skill"
             />
             <div className="space-y-8">
               <WizardSubstep number={1} title="Clean up saved memory in ChatGPT">
@@ -1325,7 +1407,7 @@ export default function ClaudeMigrationGuide() {
                 </div>
               </WizardSubstep>
               <WizardSubstep number={3} title="Import in Claude Enterprise">
-                <EnterpriseMemorySkillImportBlock />
+                <EnterpriseMemoryImportInEnterpriseBlock />
               </WizardSubstep>
               <WizardSubstep number={4} title="Reference">
                 <a
@@ -1526,14 +1608,16 @@ export default function ClaudeMigrationGuide() {
     {
       id: "memory",
       focus: "Memory",
-      subtitle: "Copy from personal Claude, then import with the Enterprise memory setup skill",
+      subtitle: "Copy from personal Claude, then import in Enterprise — settings or the org memory setup skill",
       body: (
         <div className="space-y-8">
           <WizardSubstep number={1} title="Understand the split">
             <p>
               Memory does not transfer automatically between your personal and Enterprise
-              accounts — they are separate. Use the <strong>Enterprise memory setup</strong>{" "}
-              skill in Enterprise after you export from Capabilities below.
+              accounts — they are separate. After you copy from personal Capabilities below,
+              bring it into Enterprise either in <strong>Capabilities → Memory</strong> (when
+              the editor is available) or with the <strong>Enterprise memory setup</strong>{" "}
+              skill — see the import step for both cases.
             </p>
           </WizardSubstep>
           <WizardSubstep number={2} title="Copy from personal Capabilities">
@@ -1553,7 +1637,7 @@ export default function ClaudeMigrationGuide() {
             </p>
           </WizardSubstep>
           <WizardSubstep number={3} title="Import in Claude Enterprise">
-            <EnterpriseMemorySkillImportBlock />
+            <EnterpriseMemoryImportInEnterpriseBlock />
           </WizardSubstep>
         </div>
       ),
