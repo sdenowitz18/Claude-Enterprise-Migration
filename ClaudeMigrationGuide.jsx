@@ -188,7 +188,75 @@ const URL = {
   supportSkills: "https://support.claude.com/en/articles/12512176-what-are-skills",
   supportChatMemory:
     "https://support.claude.com/en/articles/11817273-use-claude-s-chat-search-and-memory-to-build-on-previous-context",
+  docsPromptEngineering:
+    "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview",
 };
+
+/** Anthropic Academy (Skilljar) — slugs from https://anthropic.skilljar.com/ catalog. */
+const ANTHROPIC_SKILLJAR_ORIGIN = "https://anthropic.skilljar.com";
+
+const ANTHROPIC_COURSES = [
+  { title: "Claude 101", href: `${ANTHROPIC_SKILLJAR_ORIGIN}/claude-101` },
+  { title: "Claude Code 101", href: `${ANTHROPIC_SKILLJAR_ORIGIN}/claude-code-101` },
+  {
+    title: "Introduction to Claude Cowork",
+    href: `${ANTHROPIC_SKILLJAR_ORIGIN}/introduction-to-claude-cowork`,
+  },
+  { title: "Claude Code in Action", href: `${ANTHROPIC_SKILLJAR_ORIGIN}/claude-code-in-action` },
+  {
+    title: "AI Fluency: Framework & Foundations",
+    href: `${ANTHROPIC_SKILLJAR_ORIGIN}/ai-fluency-framework-foundations`,
+  },
+  {
+    title: "Model Context Protocol: Advanced Topics",
+    href: `${ANTHROPIC_SKILLJAR_ORIGIN}/model-context-protocol-advanced-topics`,
+  },
+  {
+    title: "Teaching AI Fluency",
+    href: `${ANTHROPIC_SKILLJAR_ORIGIN}/teaching-ai-fluency`,
+  },
+  {
+    title: "AI Fluency for nonprofits",
+    href: `${ANTHROPIC_SKILLJAR_ORIGIN}/ai-fluency-for-nonprofits`,
+  },
+  {
+    title: "Introduction to agent skills",
+    href: `${ANTHROPIC_SKILLJAR_ORIGIN}/introduction-to-agent-skills`,
+  },
+  {
+    title: "AI Capabilities and Limitations",
+    href: `${ANTHROPIC_SKILLJAR_ORIGIN}/ai-capabilities-and-limitations`,
+  },
+];
+
+/** Cards for “What you get with Claude Enterprise” on the landing page (carousel). */
+const ENTERPRISE_BENEFITS_DATA = [
+  {
+    key: "shared",
+    Icon: Share2,
+    title: "Shared projects, skills, and org features",
+    body: "Use teammate-built projects, org-wide Skills, and Enterprise features so you build on shared setups instead of starting from scratch each time.",
+  },
+  {
+    key: "security",
+    Icon: Shield,
+    title: "Security, privacy, and safety",
+    body: "Commercial terms for Transcend's data, admin controls, and clear rules for how AI is used at work. More detail on Transcend acceptable use will follow as policy is finalized.",
+  },
+  {
+    key: "capacity",
+    Icon: GraduationCap,
+    title: "Shared capacity building",
+    body: "One Enterprise workspace gives Transcend a shared place to learn the same tools, share what works, and build skills together instead of working in silos.",
+  },
+  {
+    key: "starters",
+    Icon: Plug,
+    title: "Starters you can use right away",
+    body: "You can start with the shared Transcend Compass project and a Notion connection through Connectors. Add other tools anytime in Settings → Connectors.",
+    showStarterLinks: true,
+  },
+];
 
 /** Explore links for the “Dig into features” screen — one flat grid, path styling from `accent`. */
 const GAINING_FEATURES = [
@@ -228,6 +296,13 @@ const GAINING_FEATURES = [
     caution: false,
   },
   {
+    title: "Prompt engineering",
+    body: "Clarity, structure, and iteration patterns for getting reliable results from Claude.",
+    href: URL.docsPromptEngineering,
+    linkLabel: "Prompt engineering overview",
+    caution: false,
+  },
+  {
     title: "Skills",
     body: "Reusable playbooks Claude loads when relevant — templates and org know-how in one place.",
     href: URL.supportSkills,
@@ -251,6 +326,16 @@ const GAINING_FEATURES = [
 ];
 
 function useAccent(path) {
+  if (path == null) {
+    return {
+      text: "text-gray-700 dark:text-gray-300",
+      bgDot: "bg-gray-500 dark:bg-gray-400",
+      ringDot: "ring-gray-500 dark:ring-gray-400",
+      btn: "bg-gray-800 text-white hover:bg-gray-900 dark:bg-gray-600 dark:hover:bg-gray-500",
+      focusRing: "focus-visible:ring-gray-500",
+      celebrate: "bg-gray-100 dark:bg-gray-800",
+    };
+  }
   const isA = path === "chatgpt";
   return {
     text: isA ? "text-orange-600 dark:text-orange-400" : "text-teal-600 dark:text-teal-400",
@@ -265,6 +350,61 @@ function useAccent(path) {
       : "focus-visible:ring-teal-500",
     celebrate: isA ? "bg-orange-50 dark:bg-orange-950/50" : "bg-teal-50 dark:bg-teal-950/50",
   };
+}
+
+function gainingCardFocusClass(path) {
+  if (path === "chatgpt") {
+    return "hover:border-orange-200 focus-visible:ring-orange-500";
+  }
+  if (path === "personal") {
+    return "hover:border-teal-200 focus-visible:ring-teal-500";
+  }
+  return "hover:border-gray-300 focus-visible:ring-gray-500";
+}
+
+function gainingTabSelectedClass(active, path) {
+  if (!active) {
+    return "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100";
+  }
+  if (path === "chatgpt") {
+    return "bg-white text-orange-700 shadow-sm dark:bg-gray-950 dark:text-orange-300";
+  }
+  if (path === "personal") {
+    return "bg-white text-teal-800 shadow-sm dark:bg-gray-950 dark:text-teal-300";
+  }
+  return "bg-white text-gray-800 shadow-sm dark:bg-gray-950 dark:text-gray-200";
+}
+
+function CarouselArrows({ page, maxPage, onPrev, onNext, accentRingClass }) {
+  const disabledPrev = page <= 0;
+  const disabledNext = page >= maxPage;
+  const ring =
+    accentRingClass ||
+    "focus-visible:ring-gray-400 dark:focus-visible:ring-gray-500";
+  const baseBtn =
+    "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950";
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        aria-label="Show previous items"
+        disabled={disabledPrev}
+        onClick={onPrev}
+        className={`${baseBtn} ${ring}`}
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden />
+      </button>
+      <button
+        type="button"
+        aria-label="Show next items"
+        disabled={disabledNext}
+        onClick={onNext}
+        className={`${baseBtn} ${ring}`}
+      >
+        <ChevronRight className="h-4 w-4" aria-hidden />
+      </button>
+    </div>
+  );
 }
 
 function ScreenTransition({ transitionKey, children }) {
@@ -618,7 +758,9 @@ function VideoLink({ href, children, variant = "orange" }) {
   const playClass =
     variant === "teal"
       ? "text-teal-600 dark:text-teal-400"
-      : "text-orange-500 dark:text-orange-400";
+      : variant === "slate"
+        ? "text-gray-600 dark:text-gray-400"
+        : "text-orange-500 dark:text-orange-400";
   return (
     <a
       href={href}
@@ -723,8 +865,42 @@ export default function ClaudeMigrationGuide() {
   });
   const [wizardPhase, setWizardPhase] = useState("chooser");
   const [wizardStepIndex, setWizardStepIndex] = useState(0);
+  const [gainingLearnTab, setGainingLearnTab] = useState("courses");
+  const [gainingFromExplore, setGainingFromExplore] = useState(false);
+  const [gainingFeaturePage, setGainingFeaturePage] = useState(0);
+  const [benefitsPage, setBenefitsPage] = useState(0);
+  const [perPageFeatures, setPerPageFeatures] = useState(3);
+  const [perPageBenefits, setPerPageBenefits] = useState(2);
 
   const accent = useAccent(path);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => {
+      setPerPageFeatures(mq.matches ? 3 : 1);
+      setPerPageBenefits(mq.matches ? 2 : 1);
+    };
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  const gainingFeaturePageMax = Math.max(
+    0,
+    Math.ceil(GAINING_FEATURES.length / perPageFeatures) - 1,
+  );
+  const benefitsPageMax = Math.max(
+    0,
+    Math.ceil(ENTERPRISE_BENEFITS_DATA.length / perPageBenefits) - 1,
+  );
+
+  useEffect(() => {
+    setGainingFeaturePage((p) => Math.min(p, gainingFeaturePageMax));
+  }, [gainingFeaturePageMax, perPageFeatures]);
+
+  useEffect(() => {
+    setBenefitsPage((p) => Math.min(p, benefitsPageMax));
+  }, [benefitsPageMax, perPageBenefits]);
 
   const pathATracksList = useMemo(() => {
     return TRACK_ORDER.filter((id) => tracks[id]);
@@ -762,6 +938,10 @@ export default function ClaudeMigrationGuide() {
     });
     setWizardPhase("chooser");
     setWizardStepIndex(0);
+    setGainingLearnTab("courses");
+    setGainingFromExplore(false);
+    setGainingFeaturePage(0);
+    setBenefitsPage(0);
   }, []);
 
   const handleFlowBack = useCallback(() => {
@@ -771,17 +951,24 @@ export default function ClaudeMigrationGuide() {
       setWizardPhase("chooser");
       setWizardStepIndex(0);
     } else if (screen === "gaining") {
-      setScreen("wizard");
+      if (gainingFromExplore) {
+        setScreen("landing");
+        setGainingFromExplore(false);
+      } else {
+        setScreen("wizard");
+      }
     } else if (screen === "done") {
       setScreen("gaining");
     }
-  }, [screen]);
+  }, [screen, gainingFromExplore]);
 
   const flowBackLabel =
     screen === "orientation"
       ? "Back to start"
       : screen === "gaining"
-        ? "Back to migration steps"
+        ? gainingFromExplore
+          ? "Back to start"
+          : "Back to migration steps"
         : screen === "done"
           ? "Back to explore features"
           : "Back";
@@ -808,129 +995,133 @@ export default function ClaudeMigrationGuide() {
       const rest = items.slice(0, -1).join(", ");
       return `You walked through: ${rest}, and ${last} (plus wrap-up) in your personal Claude → Enterprise migration.`;
     }
+    if (path == null) {
+      return "You explored features and learning resources — come back anytime from the start.";
+    }
     return "";
-  }, [path, pathATracksList]);
+  }, [path, pathATracksList, pathBTracksList]);
 
   const enterpriseBenefits = (
-    <div className="space-y-4">
-      <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-        What you get with Claude Enterprise
-      </h2>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-950">
-          <div className="mb-2 flex items-center gap-2 text-teal-600 dark:text-teal-400">
-            <Share2 className="h-5 w-5 shrink-0" aria-hidden />
-            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
-              Shared projects, skills, and org features
-            </h3>
-          </div>
-          <p className="text-base leading-relaxed text-gray-600 dark:text-gray-400">
-            Use teammate-built projects, org-wide Skills, and Enterprise features so you
-            build on shared setups instead of starting from scratch each time.
-          </p>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-950">
-          <div className="mb-2 flex items-center gap-2 text-teal-600 dark:text-teal-400">
-            <Shield className="h-5 w-5 shrink-0" aria-hidden />
-            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
-              Security, privacy, and safety
-            </h3>
-          </div>
-          <p className="text-base leading-relaxed text-gray-600 dark:text-gray-400">
-            Commercial terms for Transcend&apos;s data, admin controls, and clear rules for
-            how AI is used at work. More detail on Transcend acceptable use will follow as
-            policy is finalized.
-          </p>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-950">
-          <div className="mb-2 flex items-center gap-2 text-teal-600 dark:text-teal-400">
-            <GraduationCap className="h-5 w-5 shrink-0" aria-hidden />
-            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
-              Shared capacity building
-            </h3>
-          </div>
-          <p className="text-base leading-relaxed text-gray-600 dark:text-gray-400">
-            One Enterprise workspace gives Transcend a shared place to learn the same tools,
-            share what works, and build skills together instead of working in silos.
-          </p>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-950">
-          <div className="mb-2 flex items-center gap-2 text-teal-600 dark:text-teal-400">
-            <Plug className="h-5 w-5 shrink-0" aria-hidden />
-            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
-              Starters you can use right away
-            </h3>
-          </div>
-          <p className="text-base leading-relaxed text-gray-600 dark:text-gray-400">
-            You can start with the shared <strong>Transcend Compass</strong> project and a{" "}
-            <strong>Notion</strong> connection through Connectors. Add other tools anytime in{" "}
-            <strong>Settings → Connectors</strong>.
-          </p>
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm font-medium">
-            <a
-              href={URL.transcendCompassProject}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-teal-600 underline decoration-teal-200 underline-offset-2 hover:text-teal-700 dark:text-teal-400"
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+          What you get with Claude Enterprise
+        </h2>
+        <CarouselArrows
+          page={benefitsPage}
+          maxPage={benefitsPageMax}
+          onPrev={() => setBenefitsPage((p) => Math.max(0, p - 1))}
+          onNext={() => setBenefitsPage((p) => Math.min(benefitsPageMax, p + 1))}
+        />
+      </div>
+      <div
+        className={`grid gap-4 ${perPageBenefits >= 2 ? "md:grid-cols-2" : "grid-cols-1"}`}
+      >
+        {ENTERPRISE_BENEFITS_DATA.slice(
+          benefitsPage * perPageBenefits,
+          benefitsPage * perPageBenefits + perPageBenefits,
+        ).map((item) => {
+          const Icon = item.Icon;
+          return (
+            <div
+              key={item.key}
+              className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-950 sm:p-5"
             >
-              Transcend Compass project
-            </a>
-            <a
-              href={URL.claudeConnectors}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-teal-600 underline decoration-teal-200 underline-offset-2 hover:text-teal-700 dark:text-teal-400"
-            >
-              Connectors (Notion &amp; more)
-            </a>
-          </div>
-        </div>
+              <div className="mb-2 flex items-center gap-2 text-teal-600 dark:text-teal-400">
+                <Icon className="h-5 w-5 shrink-0" aria-hidden />
+                <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
+                  {item.title}
+                </h3>
+              </div>
+              <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400 sm:text-base">
+                {item.body}
+              </p>
+              {item.showStarterLinks ? (
+                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm font-medium">
+                  <a
+                    href={URL.transcendCompassProject}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-teal-600 underline decoration-teal-200 underline-offset-2 hover:text-teal-700 dark:text-teal-400"
+                  >
+                    Transcend Compass project
+                  </a>
+                  <a
+                    href={URL.claudeConnectors}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-teal-600 underline decoration-teal-200 underline-offset-2 hover:text-teal-700 dark:text-teal-400"
+                  >
+                    Connectors (Notion &amp; more)
+                  </a>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 
   const landingCards = (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <button
-        type="button"
-        onClick={() => {
-          setPath("chatgpt");
-          setWizardPhase("chooser");
-          setWizardStepIndex(0);
-          setScreen("orientation");
-        }}
-        className="group rounded-xl border border-gray-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-950 dark:hover:border-orange-800 dark:focus-visible:ring-offset-gray-950"
-      >
-        <div className="mb-4 inline-flex rounded-lg bg-orange-50 p-3 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400">
-          <ArrowRightLeft className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-          I&apos;m coming from ChatGPT
-        </h3>
-        <p className="mt-2 text-base leading-relaxed text-gray-600 dark:text-gray-400">
-          Memory, Custom GPTs, personalization, connectors — migrate what you need.
-        </p>
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          setPath("personal");
-          setWizardPhase("chooser");
-          setWizardStepIndex(0);
-          setScreen("orientation");
-        }}
-        className="group rounded-xl border border-gray-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-950 dark:hover:border-teal-800 dark:focus-visible:ring-offset-gray-950"
-      >
-        <div className="mb-4 inline-flex rounded-lg bg-teal-50 p-3 text-teal-600 dark:bg-teal-950/50 dark:text-teal-400">
-          <User className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-          I&apos;m on a personal Claude account
-        </h3>
-        <p className="mt-2 text-base leading-relaxed text-gray-600 dark:text-gray-400">
-          Projects, settings, memory, connectors — bring your active work into Enterprise.
-        </p>
-      </button>
+    <div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => {
+            setPath("chatgpt");
+            setWizardPhase("chooser");
+            setWizardStepIndex(0);
+            setScreen("orientation");
+          }}
+          className="group rounded-xl border border-gray-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-950 dark:hover:border-orange-800 dark:focus-visible:ring-offset-gray-950"
+        >
+          <div className="mb-4 inline-flex rounded-lg bg-orange-50 p-3 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400">
+            <ArrowRightLeft className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+            I&apos;m coming from ChatGPT
+          </h3>
+          <p className="mt-2 text-base leading-relaxed text-gray-600 dark:text-gray-400">
+            Memory, Custom GPTs, personalization, connectors — migrate what you need.
+          </p>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setPath("personal");
+            setWizardPhase("chooser");
+            setWizardStepIndex(0);
+            setScreen("orientation");
+          }}
+          className="group rounded-xl border border-gray-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-950 dark:hover:border-teal-800 dark:focus-visible:ring-offset-gray-950"
+        >
+          <div className="mb-4 inline-flex rounded-lg bg-teal-50 p-3 text-teal-600 dark:bg-teal-950/50 dark:text-teal-400">
+            <User className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+            I&apos;m on a personal Claude account
+          </h3>
+          <p className="mt-2 text-base leading-relaxed text-gray-600 dark:text-gray-400">
+            Projects, settings, memory, connectors — bring your active work into Enterprise.
+          </p>
+        </button>
+      </div>
+      <p className="mt-4 text-center sm:text-left">
+        <button
+          type="button"
+          onClick={() => {
+            setPath(null);
+            setGainingFromExplore(true);
+            setGainingFeaturePage(0);
+            setGainingLearnTab("courses");
+            setScreen("gaining");
+          }}
+          className="border-0 bg-transparent p-0 text-base font-medium text-teal-700 underline decoration-teal-200 underline-offset-2 transition hover:text-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:text-teal-400 dark:hover:text-teal-300 dark:focus-visible:ring-teal-400 dark:focus-visible:ring-offset-gray-950"
+        >
+          Explore Claude
+        </button>
+      </p>
     </div>
   );
 
@@ -1761,8 +1952,10 @@ export default function ClaudeMigrationGuide() {
     };
 
     const goNext = () => {
-      if (atLast) setScreen("gaining");
-      else setWizardStepIndex((i) => Math.min(i + 1, total - 1));
+      if (atLast) {
+        setGainingFromExplore(false);
+        setScreen("gaining");
+      } else setWizardStepIndex((i) => Math.min(i + 1, total - 1));
     };
 
     return (
@@ -1792,8 +1985,10 @@ export default function ClaudeMigrationGuide() {
     };
 
     const goNext = () => {
-      if (atLast) setScreen("gaining");
-      else setWizardStepIndex((i) => i + 1);
+      if (atLast) {
+        setGainingFromExplore(false);
+        setScreen("gaining");
+      } else setWizardStepIndex((i) => i + 1);
     };
 
     if (!step || total === 0) {
@@ -1829,16 +2024,27 @@ export default function ClaudeMigrationGuide() {
     );
   };
 
+  const mediaLinkVariant =
+    path === "personal" ? "teal" : path === "chatgpt" ? "orange" : "slate";
+
+  const gainingIntro =
+    path == null
+      ? "Browse features, Anthropic courses, and short videos — all optional; pick what fits how you work."
+      : "Your migration checklist is complete. Use the links below to explore what to try next — from core product ideas to Connectors, memory, and more powerful tools. Nothing here is required; choose what fits how you work.";
+
+  const gainingFeatureSlice = GAINING_FEATURES.slice(
+    gainingFeaturePage * perPageFeatures,
+    gainingFeaturePage * perPageFeatures + perPageFeatures,
+  );
+
   const gainingScreen = (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-medium text-gray-900 dark:text-gray-100 sm:text-3xl">
           Dig into features
         </h1>
-        <p className="mt-2 max-w-2xl text-base leading-relaxed text-gray-600 dark:text-gray-400">
-          Your migration checklist is complete. Use the links below to explore what to try
-          next — from core product ideas to Connectors, memory, and more powerful tools.
-          Nothing here is required; choose what fits how you work.
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-600 dark:text-gray-400 sm:text-base">
+          {gainingIntro}
         </p>
       </header>
 
@@ -1851,61 +2057,111 @@ export default function ClaudeMigrationGuide() {
         will share clearer guidance when it is ready.
       </TipCallout>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {GAINING_FEATURES.map((c) => (
-          <a
-            key={c.title}
-            href={c.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`group flex h-full flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-950 dark:focus-visible:ring-offset-gray-950 ${
-              path === "chatgpt"
-                ? "hover:border-orange-200 focus-visible:ring-orange-500"
-                : "hover:border-teal-200 focus-visible:ring-teal-500"
-            }`}
-          >
-            {c.caution ? (
-              <span className="mb-2 inline-flex w-fit rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-950 dark:bg-amber-950/50 dark:text-amber-100">
-                Proceed with caution
-              </span>
-            ) : null}
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-              {c.title}
-            </h3>
-            <p className="mt-2 flex-1 text-base leading-relaxed text-gray-600 dark:text-gray-400">
-              {c.body}
-            </p>
-            <span
-              className={`mt-4 inline-flex items-center gap-1 text-base font-medium ${accent.text}`}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <CarouselArrows
+            page={gainingFeaturePage}
+            maxPage={gainingFeaturePageMax}
+            onPrev={() => setGainingFeaturePage((p) => Math.max(0, p - 1))}
+            onNext={() =>
+              setGainingFeaturePage((p) => Math.min(gainingFeaturePageMax, p + 1))
+            }
+          />
+        </div>
+        <div
+          className={`grid gap-4 ${perPageFeatures >= 3 ? "md:grid-cols-3" : "grid-cols-1"}`}
+        >
+          {gainingFeatureSlice.map((c) => (
+            <a
+              key={c.title}
+              href={c.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`group flex h-full min-h-[12rem] flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-950 dark:focus-visible:ring-offset-gray-950 sm:min-h-0 sm:p-5 ${gainingCardFocusClass(path)}`}
             >
-              {c.linkLabel}
-              <ChevronRight className="h-4 w-4" aria-hidden />
-            </span>
-          </a>
-        ))}
+              {c.caution ? (
+                <span className="mb-2 inline-flex w-fit rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-950 dark:bg-amber-950/50 dark:text-amber-100">
+                  Proceed with caution
+                </span>
+              ) : null}
+              <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 sm:text-lg">
+                {c.title}
+              </h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-gray-600 dark:text-gray-400 sm:text-base">
+                {c.body}
+              </p>
+              <span
+                className={`mt-3 inline-flex items-center gap-1 text-sm font-medium sm:mt-4 sm:text-base ${accent.text}`}
+              >
+                {c.linkLabel}
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </span>
+            </a>
+          ))}
+        </div>
       </div>
 
-      <div>
+      <div className="space-y-3">
         <p className="text-sm font-medium text-gray-500 dark:text-gray-500">
-          Video tutorials
+          Courses &amp; video tutorials
         </p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {path === "personal" ? (
-            <>
-              <VideoLink href={URL.videoIntroArtifacts} variant="teal">
-                Watch: Intro to Artifacts
-              </VideoLink>
-              <VideoLink href={URL.videoSkills} variant="teal">
-                Watch: Skills overview
-              </VideoLink>
-            </>
-          ) : (
-            <>
-              <VideoLink href={URL.videoIntroArtifacts}>Watch: Intro to Artifacts</VideoLink>
-              <VideoLink href={URL.videoSkills}>Watch: Skills overview</VideoLink>
-            </>
-          )}
+        <div
+          className="inline-flex rounded-lg border border-gray-200 bg-stone-100 p-0.5 dark:border-gray-700 dark:bg-gray-900"
+          role="tablist"
+          aria-label="Courses and video tutorials"
+        >
+          <button
+            type="button"
+            role="tab"
+            id="gaining-tab-courses"
+            aria-selected={gainingLearnTab === "courses"}
+            aria-controls="gaining-panel-courses"
+            onClick={() => setGainingLearnTab("courses")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 dark:focus-visible:ring-gray-500 dark:focus-visible:ring-offset-gray-950 ${gainingTabSelectedClass(gainingLearnTab === "courses", path)}`}
+          >
+            Courses
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="gaining-tab-videos"
+            aria-selected={gainingLearnTab === "videos"}
+            aria-controls="gaining-panel-videos"
+            onClick={() => setGainingLearnTab("videos")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 dark:focus-visible:ring-gray-500 dark:focus-visible:ring-offset-gray-950 ${gainingTabSelectedClass(gainingLearnTab === "videos", path)}`}
+          >
+            Video tutorials
+          </button>
         </div>
+
+        {gainingLearnTab === "courses" ? (
+          <div
+            id="gaining-panel-courses"
+            role="tabpanel"
+            aria-labelledby="gaining-tab-courses"
+            className="flex flex-wrap gap-2"
+          >
+            {ANTHROPIC_COURSES.map((c) => (
+              <VideoLink key={c.href} href={c.href} variant={mediaLinkVariant}>
+                {c.title}
+              </VideoLink>
+            ))}
+          </div>
+        ) : (
+          <div
+            id="gaining-panel-videos"
+            role="tabpanel"
+            aria-labelledby="gaining-tab-videos"
+            className="flex flex-wrap gap-2"
+          >
+            <VideoLink href={URL.videoIntroArtifacts} variant={mediaLinkVariant}>
+              Watch: Intro to Artifacts
+            </VideoLink>
+            <VideoLink href={URL.videoSkills} variant={mediaLinkVariant}>
+              Watch: Skills overview
+            </VideoLink>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end">
@@ -1976,44 +2232,38 @@ export default function ClaudeMigrationGuide() {
   let main = null;
   if (screen === "landing") {
     main = (
-      <div className="space-y-8">
+      <div className="space-y-5">
         <aside
-          className="rounded-xl border border-amber-200/90 bg-amber-50/80 p-4 text-sm leading-relaxed text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100 sm:p-5"
+          className="rounded-lg border border-amber-200/90 bg-amber-50/80 px-3 py-2.5 text-xs leading-snug text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100 sm:px-4 sm:py-3 sm:text-sm"
           aria-labelledby="landing-invite-heading"
         >
           <h2
             id="landing-invite-heading"
-            className="text-base font-semibold text-amber-950 dark:text-amber-50"
+            className="text-xs font-semibold text-amber-950 dark:text-amber-50 sm:text-sm"
           >
             Before you begin
           </h2>
-          <p className="mt-2 text-amber-900/95 dark:text-amber-100/95">
-            Check your email (including spam or promotions). You should have a message
-            inviting you to join <strong>Transcend&apos;s Claude Enterprise workspace</strong>.
-            Open that email and <strong>accept the invitation</strong> — you need an active
-            seat in the org before the steps in this guide will work.
+          <p className="mt-1 text-amber-900/95 dark:text-amber-100/95">
+            Accept your <strong>Claude Enterprise invite</strong> from email (check spam)
+            so you have an org seat before you run through migration steps.
           </p>
         </aside>
-        <div className="relative overflow-hidden rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 via-white to-teal-50 p-6 shadow-sm dark:border-orange-900/40 dark:from-orange-950/30 dark:via-gray-950 dark:to-teal-950/20 sm:p-8">
+        <div className="relative overflow-hidden rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 via-white to-teal-50 p-5 shadow-sm dark:border-orange-900/40 dark:from-orange-950/30 dark:via-gray-950 dark:to-teal-950/20 sm:p-6">
           <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-orange-200/40 blur-2xl dark:bg-orange-500/10" aria-hidden />
           <div className="absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-teal-200/30 blur-2xl dark:bg-teal-500/10" aria-hidden />
           <div className="relative">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-orange-800 shadow-sm dark:bg-gray-900/90 dark:text-orange-200">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-orange-800 shadow-sm dark:bg-gray-900/90 dark:text-orange-200">
               <Sparkles className="h-3.5 w-3.5" aria-hidden />
               Transcend · Claude Enterprise
             </div>
             <header className="max-w-2xl">
-              <h1 className="text-3xl font-medium leading-tight text-gray-900 dark:text-gray-100 sm:text-4xl">
+              <h1 className="text-2xl font-medium leading-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
                 Let&apos;s get you set up on Claude Enterprise
               </h1>
-              <p className="mt-4 text-base leading-relaxed text-gray-700 dark:text-gray-300">
-                We now have a Claude Enterprise account for the team. We think you are
-                going to love Claude and everything it offers. Transcend will continue to
-                support the enterprise ChatGPT account — and we built this guide so you
-                can bring over your context from <strong>ChatGPT</strong> or a{" "}
-                <strong>personal Claude</strong> account. The goal is simple: when you
-                start working in Enterprise, it should feel like your LLM partner has not
-                missed a step.
+              <p className="mt-3 text-sm leading-relaxed text-gray-700 dark:text-gray-300 sm:text-base">
+                New org workspace for the team — use this guide to move context from{" "}
+                <strong>ChatGPT</strong> or <strong>personal Claude</strong> so Enterprise
+                feels like a seamless step forward.
               </p>
             </header>
           </div>
@@ -2023,9 +2273,8 @@ export default function ClaudeMigrationGuide() {
           <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
             Where are you moving from?
           </h2>
-          <p className="mt-1 text-base leading-relaxed text-gray-600 dark:text-gray-400">
-            Choose the path that matches your setup — each one includes a short
-            orientation, then step-by-step migration.
+          <p className="mt-1 text-sm leading-relaxed text-gray-600 dark:text-gray-400 sm:text-base">
+            Pick a path for orientation and migration, or explore features below.
           </p>
         </div>
         {landingCards}
