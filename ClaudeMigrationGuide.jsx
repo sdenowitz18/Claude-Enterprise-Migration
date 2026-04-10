@@ -353,7 +353,7 @@ function WizardSubstep({ number, title, children }) {
 
 function MemoryCapabilityExampleFigure({ src, alt, caption }) {
   return (
-    <figure className="mx-auto w-full max-w-md shrink-0 md:mx-0 md:w-[min(100%,320px)]">
+    <figure className="mx-auto w-full max-w-2xl">
       <img
         src={src}
         alt={alt}
@@ -389,8 +389,8 @@ function EnterpriseMemoryImportInEnterpriseBlock() {
       </p>
 
       <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-950">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
-          <div className="min-w-0 flex-1 space-y-3">
+        <div className="flex flex-col gap-4">
+          <div className="space-y-3">
             <p className="font-medium text-gray-900 dark:text-gray-100">
               If you can use <strong>View and edit memory</strong> (or similar)
             </p>
@@ -410,8 +410,8 @@ function EnterpriseMemoryImportInEnterpriseBlock() {
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-950">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
-          <div className="min-w-0 flex-1 space-y-3">
+        <div className="flex flex-col gap-4">
+          <div className="space-y-3">
             <p className="font-medium text-gray-900 dark:text-gray-100">
               If you only see an empty or &quot;not much yet&quot; message
             </p>
