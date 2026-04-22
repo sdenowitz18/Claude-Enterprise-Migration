@@ -509,6 +509,7 @@ function MemoryCapabilityExampleFigure({ src, alt, caption }) {
 /**
  * Shared: bring exported memory into Claude Enterprise. Capabilities → Memory can show
  * either a full editor (“View and edit memory”) or an early empty state — cover both.
+ * Also remind users to enable chat search + memory-from-chats toggles on Capabilities.
  */
 function EnterpriseMemoryImportInEnterpriseBlock() {
   return (
@@ -527,6 +528,14 @@ function EnterpriseMemoryImportInEnterpriseBlock() {
         especially right after you first join the org, or before you have much history in
         Enterprise.
       </p>
+
+      <TipCallout variant="gray">
+        <strong className="font-medium">On that Capabilities page:</strong> make sure{" "}
+        <strong>Search and reference chats</strong> and{" "}
+        <strong>Generate memory from chat history</strong> are both turned{" "}
+        <strong>on</strong> (if your layout shows those toggles). That way search across chats
+        and memory from history behave as expected while you import and use Enterprise.
+      </TipCallout>
 
       <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-950">
         <div className="flex flex-col gap-4">
