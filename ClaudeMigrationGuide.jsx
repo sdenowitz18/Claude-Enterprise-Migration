@@ -185,6 +185,7 @@ const URL = {
   transcendCompassProject: "https://claude.ai/project/019d6e4c-d5d7-7101-924d-3ea814765606",
   supportCowork: "https://support.claude.com/en/articles/13345190-getting-started-with-cowork",
   docsClaudeCode: "https://docs.anthropic.com/en/docs/claude-code/overview",
+  supportClaudeDesign: "https://support.claude.com/en/articles/14604416-get-started-with-claude-design",
   supportSkills: "https://support.claude.com/en/articles/12512176-what-are-skills",
   supportChatMemory:
     "https://support.claude.com/en/articles/11817273-use-claude-s-chat-search-and-memory-to-build-on-previous-context",
@@ -321,6 +322,13 @@ const GAINING_FEATURES = [
     body: "Claude-assisted coding in your terminal and repository — available on many Enterprise plans.",
     href: URL.docsClaudeCode,
     linkLabel: "Learn about Claude Code",
+    caution: true,
+  },
+  {
+    title: "Claude Design",
+    body: "Create designs, interactive prototypes, and presentations by describing what you want — your brand system is built in.",
+    href: URL.supportClaudeDesign,
+    linkLabel: "Get started with Claude Design",
     caution: true,
   },
 ];
