@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRightLeft,
   Check,
   ChevronRight,
+  Compass,
   ExternalLink,
   GraduationCap,
   Play,
@@ -239,6 +241,20 @@ const ENTERPRISE_BENEFITS_DATA = [
     body: "Use teammate-built projects, org-wide Skills, and Enterprise features so you build on shared setups instead of starting from scratch each time.",
   },
   {
+    key: "compass",
+    Icon: Compass,
+    title: "Transcend Compass",
+    body: "Ask Compass anything about Transcend — theory of change, theory of action, strategic approach, or how we work. Built on our foundational documentation and designed to think alongside you.",
+    links: [{ label: "Open Transcend Compass", href: "transcendCompassProject" }],
+  },
+  {
+    key: "connectors",
+    Icon: Plug,
+    title: "Pre-built Connectors",
+    body: "Connect Claude to tools your team already uses — like Notion, Slack, and Google Drive. More coming soon.",
+    links: [{ label: "Open Connectors", href: "claudeConnectors" }],
+  },
+  {
     key: "security",
     Icon: Shield,
     title: "Security, privacy, and safety",
@@ -250,13 +266,6 @@ const ENTERPRISE_BENEFITS_DATA = [
     title: "Shared capacity building",
     body: "One Enterprise workspace gives Transcend a shared place to learn the same tools, share what works, and build skills together instead of working in silos.",
   },
-  {
-    key: "starters",
-    Icon: Plug,
-    title: "Starters you can use right away",
-    body: "You can start with the shared Transcend Compass project and a Notion connection through Connectors. Add other tools anytime in Settings → Connectors.",
-    showStarterLinks: true,
-  },
 ];
 
 /** Explore links for the “Dig into features” screen — one flat grid, path styling from `accent`. */
@@ -266,70 +275,71 @@ const GAINING_FEATURES = [
     body: "Standalone outputs you can edit, iterate on, and reuse — not just text in the thread.",
     href: URL.supportArtifacts,
     linkLabel: "Learn about Artifacts",
-    caution: false,
+    horizon: "now",
   },
   {
     title: "Projects",
     body: "Workspaces with saved instructions and files — where ongoing work lives.",
     href: URL.supportProjects,
     linkLabel: "Learn about Projects",
-    caution: false,
+    horizon: "now",
   },
   {
     title: "Transcend Compass",
-    body: "A shared Transcend project for Theory of Change and strategy — open it whenever you need it.",
+    body: "Use Transcend Compass — your shared AI thinking partner grounded in Transcend's strategy and foundational docs.",
     href: URL.transcendCompassProject,
     linkLabel: "Open Transcend Compass",
-    caution: false,
+    horizon: "now",
   },
   {
     title: "Connectors",
-    body: "Link Notion, Google Drive, and other tools so Claude can work with your real stack.",
+    body: "Link Notion, Slack, Google Drive, and more so Claude can work with your real stack.",
     href: URL.claudeConnectors,
     linkLabel: "Open Connectors",
-    caution: false,
+    horizon: "now",
   },
   {
     title: "Chat search & memory",
     body: "How Claude uses memory across chats and how to review or update what it stores.",
     href: URL.supportChatMemory,
     linkLabel: "Help: Memory & search",
-    caution: false,
+    horizon: "now",
   },
   {
     title: "Prompt engineering",
     body: "Clarity, structure, and iteration patterns for getting reliable results from Claude.",
     href: URL.docsPromptEngineering,
     linkLabel: "Prompt engineering overview",
-    caution: false,
+    horizon: "now",
   },
   {
     title: "Skills",
-    body: "Reusable playbooks Claude loads when relevant — templates and org know-how in one place.",
+    body: "Write down how something should be done once — Claude keeps it in its pocket and pulls it out whenever it's relevant.",
     href: URL.supportSkills,
     linkLabel: "Learn about Skills",
-    caution: true,
+    horizon: "now",
+    securityWarning: true,
   },
   {
     title: "Claude Cowork",
     body: "Agent-style work in the desktop app — files, tools, and connectors with guardrails.",
     href: URL.supportCowork,
     linkLabel: "Learn about Cowork",
-    caution: true,
+    horizon: "next",
   },
   {
     title: "Claude Code",
     body: "Claude-assisted coding in your terminal and repository — available on many Enterprise plans.",
     href: URL.docsClaudeCode,
     linkLabel: "Learn about Claude Code",
-    caution: true,
+    horizon: "next",
   },
   {
     title: "Claude Design",
     body: "Create designs, interactive prototypes, and presentations by describing what you want — your brand system is built in.",
     href: URL.supportClaudeDesign,
     linkLabel: "Get started with Claude Design",
-    caution: true,
+    horizon: "next",
   },
 ];
 
@@ -883,10 +893,10 @@ export default function ClaudeMigrationGuide() {
   const [wizardPhase, setWizardPhase] = useState("chooser");
   const [wizardStepIndex, setWizardStepIndex] = useState(0);
   const [gainingLearnTab, setGainingLearnTab] = useState("courses");
-  const [gainingFromExplore, setGainingFromExplore] = useState(false);
+  const [gainingHorizonTab, setGainingHorizonTab] = useState("now");
   const [gainingFeaturePage, setGainingFeaturePage] = useState(0);
+  const [gainingFromExplore, setGainingFromExplore] = useState(false);
   const [benefitsPage, setBenefitsPage] = useState(0);
-  const [perPageFeatures, setPerPageFeatures] = useState(3);
   const [perPageBenefits, setPerPageBenefits] = useState(2);
 
   const accent = useAccent(path);
@@ -894,7 +904,6 @@ export default function ClaudeMigrationGuide() {
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
     const update = () => {
-      setPerPageFeatures(mq.matches ? 3 : 1);
       setPerPageBenefits(mq.matches ? 2 : 1);
     };
     update();
@@ -902,18 +911,10 @@ export default function ClaudeMigrationGuide() {
     return () => mq.removeEventListener("change", update);
   }, []);
 
-  const gainingFeaturePageMax = Math.max(
-    0,
-    Math.ceil(GAINING_FEATURES.length / perPageFeatures) - 1,
-  );
   const benefitsPageMax = Math.max(
     0,
     Math.ceil(ENTERPRISE_BENEFITS_DATA.length / perPageBenefits) - 1,
   );
-
-  useEffect(() => {
-    setGainingFeaturePage((p) => Math.min(p, gainingFeaturePageMax));
-  }, [gainingFeaturePageMax, perPageFeatures]);
 
   useEffect(() => {
     setBenefitsPage((p) => Math.min(p, benefitsPageMax));
@@ -956,8 +957,9 @@ export default function ClaudeMigrationGuide() {
     setWizardPhase("chooser");
     setWizardStepIndex(0);
     setGainingLearnTab("courses");
-    setGainingFromExplore(false);
+    setGainingHorizonTab("now");
     setGainingFeaturePage(0);
+    setGainingFromExplore(false);
     setBenefitsPage(0);
   }, []);
 
@@ -1053,24 +1055,20 @@ export default function ClaudeMigrationGuide() {
               <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400 sm:text-base">
                 {item.body}
               </p>
-              {item.showStarterLinks ? (
-                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm font-medium">
-                  <a
-                    href={URL.transcendCompassProject}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-teal-600 underline decoration-teal-200 underline-offset-2 hover:text-teal-700 dark:text-teal-400"
-                  >
-                    Transcend Compass project
-                  </a>
-                  <a
-                    href={URL.claudeConnectors}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-teal-600 underline decoration-teal-200 underline-offset-2 hover:text-teal-700 dark:text-teal-400"
-                  >
-                    Connectors (Notion &amp; more)
-                  </a>
+              {item.links?.length ? (
+                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm font-medium">
+                  {item.links.map((l) => (
+                    <a
+                      key={l.href}
+                      href={URL[l.href]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-teal-600 underline decoration-teal-200 underline-offset-2 hover:text-teal-700 dark:text-teal-400"
+                    >
+                      {l.label}
+                      <ExternalLink className="h-3 w-3" aria-hidden />
+                    </a>
+                  ))}
                 </div>
               ) : null}
             </div>
@@ -1130,7 +1128,7 @@ export default function ClaudeMigrationGuide() {
           onClick={() => {
             setPath(null);
             setGainingFromExplore(true);
-            setGainingFeaturePage(0);
+            setGainingHorizonTab("now");
             setGainingLearnTab("courses");
             setScreen("gaining");
           }}
@@ -2049,10 +2047,11 @@ export default function ClaudeMigrationGuide() {
       ? "Browse features, Anthropic courses, and short videos — all optional; pick what fits how you work."
       : "Your migration checklist is complete. Use the links below to explore what to try next — from core product ideas to Connectors, memory, and more powerful tools. Nothing here is required; choose what fits how you work.";
 
-  const gainingFeatureSlice = GAINING_FEATURES.slice(
-    gainingFeaturePage * perPageFeatures,
-    gainingFeaturePage * perPageFeatures + perPageFeatures,
-  );
+  const gainingFeaturesNow = GAINING_FEATURES.filter((c) => c.horizon === "now");
+  const gainingFeaturesNext = GAINING_FEATURES.filter((c) => c.horizon === "next");
+  const gainingFeatureList = gainingHorizonTab === "now" ? gainingFeaturesNow : gainingFeaturesNext;
+  const gainingFeaturePageMax = Math.max(0, Math.ceil(gainingFeatureList.length / 3) - 1);
+  const gainingFeatureSlice = gainingFeatureList.slice(gainingFeaturePage * 3, gainingFeaturePage * 3 + 3);
 
   const gainingScreen = (
     <div className="space-y-6">
@@ -2067,42 +2066,59 @@ export default function ClaudeMigrationGuide() {
 
       <TipCallout variant="gray">
         <strong className="font-medium">Documentation is there to help.</strong> If you
-        start using <strong className="font-medium">Skills</strong>,{" "}
-        <strong className="font-medium">Cowork</strong>, or{" "}
+        start using <strong className="font-medium">Cowork</strong> or{" "}
         <strong className="font-medium">Claude Code</strong> for real work, take extra
         care — Transcend is still finalizing acceptable-use rules for AI tools, and we
         will share clearer guidance when it is ready.
       </TipCallout>
 
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-end gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div
+            className="inline-flex rounded-lg border border-gray-200 bg-stone-100 p-0.5 dark:border-gray-700 dark:bg-gray-900"
+            role="tablist"
+            aria-label="Feature horizon"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={gainingHorizonTab === "now"}
+              onClick={() => { setGainingHorizonTab("now"); setGainingFeaturePage(0); }}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 dark:focus-visible:ring-gray-500 dark:focus-visible:ring-offset-gray-950 ${gainingTabSelectedClass(gainingHorizonTab === "now", path)}`}
+            >
+              Available now
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={gainingHorizonTab === "next"}
+              onClick={() => { setGainingHorizonTab("next"); setGainingFeaturePage(0); }}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 dark:focus-visible:ring-gray-500 dark:focus-visible:ring-offset-gray-950 ${gainingTabSelectedClass(gainingHorizonTab === "next", path)}`}
+            >
+              Coming soon
+            </button>
+          </div>
           <CarouselArrows
             page={gainingFeaturePage}
             maxPage={gainingFeaturePageMax}
             onPrev={() => setGainingFeaturePage((p) => Math.max(0, p - 1))}
-            onNext={() =>
-              setGainingFeaturePage((p) => Math.min(gainingFeaturePageMax, p + 1))
-            }
+            onNext={() => setGainingFeaturePage((p) => Math.min(gainingFeaturePageMax, p + 1))}
           />
         </div>
-        <div
-          className={`grid gap-4 ${perPageFeatures >= 3 ? "md:grid-cols-3" : "grid-cols-1"}`}
-        >
+        <div className="grid gap-4 md:grid-cols-3">
           {gainingFeatureSlice.map((c) => (
             <a
               key={c.title}
               href={c.href}
               target="_blank"
               rel="noopener noreferrer"
-              className={`group flex h-full min-h-[12rem] flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-950 dark:focus-visible:ring-offset-gray-950 sm:min-h-0 sm:p-5 ${gainingCardFocusClass(path)}`}
+              className={`group flex h-full flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-950 dark:focus-visible:ring-offset-gray-950 sm:p-5 ${gainingCardFocusClass(path)}`}
             >
-              {c.caution ? (
-                <span className="mb-2 inline-flex w-fit rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-950 dark:bg-amber-950/50 dark:text-amber-100">
-                  Proceed with caution
-                </span>
-              ) : null}
-              <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 sm:text-lg">
+              <h3 className="flex items-center gap-1.5 text-base font-medium text-gray-900 dark:text-gray-100 sm:text-lg">
                 {c.title}
+                {c.securityWarning ? (
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" aria-hidden />
+                ) : null}
               </h3>
               <p className="mt-2 flex-1 text-sm leading-relaxed text-gray-600 dark:text-gray-400 sm:text-base">
                 {c.body}
@@ -2116,6 +2132,12 @@ export default function ClaudeMigrationGuide() {
             </a>
           ))}
         </div>
+        {gainingFeatureSlice.some((c) => c.securityWarning) ? (
+          <p className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+            Never upload a skill from an external source — doing so poses a security risk to Transcend.
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-3">
