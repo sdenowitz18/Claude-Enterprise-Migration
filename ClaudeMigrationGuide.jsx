@@ -754,20 +754,21 @@ function WizardStepHeading({ focus, subtitle }) {
   );
 }
 
-function TranscendLogo() {
-  return (
-    <img
-      src="/transcend-logo.png"
-      alt="Transcend"
-      className="h-9 w-auto max-w-[min(100%,220px)] shrink-0 object-contain object-left opacity-95 dark:opacity-100 sm:h-10"
-    />
-  );
-}
-
-function SiteHeader() {
+function SiteHeader({ onHome }) {
   return (
     <div className="flex flex-col gap-4 border-b border-gray-200 pb-6 dark:border-gray-800 sm:flex-row sm:items-center sm:gap-6">
-      <TranscendLogo />
+      <button
+        type="button"
+        onClick={onHome}
+        className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 dark:focus-visible:ring-gray-500"
+        aria-label="Go to home page"
+      >
+        <img
+          src="/transcend-logo.png"
+          alt="Transcend"
+          className="h-9 w-auto max-w-[min(100%,220px)] object-contain object-left opacity-95 transition hover:opacity-70 dark:opacity-100 dark:hover:opacity-70 sm:h-10"
+        />
+      </button>
       <div className="min-w-0 flex-1">
         <p className="text-lg font-medium leading-snug text-gray-900 dark:text-gray-100 sm:text-xl">
           Migrate to Transcend's Claude Enterprise
@@ -2345,7 +2346,7 @@ export default function ClaudeMigrationGuide() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="mb-6">
-        <SiteHeader />
+        <SiteHeader onHome={resetAll} />
       </div>
       {showGlobalBack && (
         <FlowBackButton onClick={handleFlowBack} label={flowBackLabel} />
