@@ -3,11 +3,13 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRightLeft,
+  Calendar,
   Check,
   ChevronRight,
   Compass,
   ExternalLink,
   GraduationCap,
+  Palette,
   Play,
   Plug,
   Share2,
@@ -199,37 +201,39 @@ const URL = {
 const ANTHROPIC_SKILLJAR_ORIGIN = "https://anthropic.skilljar.com";
 
 const ANTHROPIC_COURSES = [
-  { title: "Claude 101", href: `${ANTHROPIC_SKILLJAR_ORIGIN}/claude-101` },
-  { title: "Claude Code 101", href: `${ANTHROPIC_SKILLJAR_ORIGIN}/claude-code-101` },
-  {
-    title: "Introduction to Claude Cowork",
-    href: `${ANTHROPIC_SKILLJAR_ORIGIN}/introduction-to-claude-cowork`,
-  },
-  { title: "Claude Code in Action", href: `${ANTHROPIC_SKILLJAR_ORIGIN}/claude-code-in-action` },
+  { title: "Claude 101", href: `${ANTHROPIC_SKILLJAR_ORIGIN}/claude-101`, horizon: "now" },
+  { title: "Claude Code 101", href: `${ANTHROPIC_SKILLJAR_ORIGIN}/claude-code-101`, horizon: "now" },
   {
     title: "AI Fluency: Framework & Foundations",
     href: `${ANTHROPIC_SKILLJAR_ORIGIN}/ai-fluency-framework-foundations`,
-  },
-  {
-    title: "Model Context Protocol: Advanced Topics",
-    href: `${ANTHROPIC_SKILLJAR_ORIGIN}/model-context-protocol-advanced-topics`,
+    horizon: "now",
   },
   {
     title: "Teaching AI Fluency",
     href: `${ANTHROPIC_SKILLJAR_ORIGIN}/teaching-ai-fluency`,
+    horizon: "now",
   },
   {
     title: "AI Fluency for nonprofits",
     href: `${ANTHROPIC_SKILLJAR_ORIGIN}/ai-fluency-for-nonprofits`,
+    horizon: "now",
   },
   {
     title: "Introduction to agent skills",
     href: `${ANTHROPIC_SKILLJAR_ORIGIN}/introduction-to-agent-skills`,
+    horizon: "now",
   },
   {
     title: "AI Capabilities and Limitations",
     href: `${ANTHROPIC_SKILLJAR_ORIGIN}/ai-capabilities-and-limitations`,
+    horizon: "now",
   },
+  {
+    title: "Introduction to Claude Cowork",
+    href: `${ANTHROPIC_SKILLJAR_ORIGIN}/introduction-to-claude-cowork`,
+    horizon: "next",
+  },
+  { title: "Claude Code in Action", href: `${ANTHROPIC_SKILLJAR_ORIGIN}/claude-code-in-action`, horizon: "next" },
 ];
 
 /** Cards for “What you get with Claude Enterprise” on the landing page (carousel). */
@@ -265,6 +269,19 @@ const ENTERPRISE_BENEFITS_DATA = [
     Icon: GraduationCap,
     title: "Shared capacity building",
     body: "One Enterprise workspace gives Transcend a shared place to learn the same tools, share what works, and build skills together instead of working in silos.",
+  },
+  {
+    key: "scheduling",
+    Icon: Calendar,
+    title: "Scheduling assistant",
+    body: "Connect Google Calendar and Claude can find availability and schedule meetings for you — just ask.",
+    links: [{ label: "Open Connectors", href: "claudeConnectors" }],
+  },
+  {
+    key: "brand",
+    Icon: Palette,
+    title: "Brand guidelines",
+    body: "Ask Claude to create presentations, documents, and other assets that match Transcend's brand guidelines — colors, language, and style built in.",
   },
 ];
 
@@ -893,7 +910,6 @@ export default function ClaudeMigrationGuide() {
   });
   const [wizardPhase, setWizardPhase] = useState("chooser");
   const [wizardStepIndex, setWizardStepIndex] = useState(0);
-  const [gainingLearnTab, setGainingLearnTab] = useState("courses");
   const [gainingHorizonTab, setGainingHorizonTab] = useState("now");
   const [gainingFeaturePage, setGainingFeaturePage] = useState(0);
   const [gainingFromExplore, setGainingFromExplore] = useState(false);
@@ -957,7 +973,6 @@ export default function ClaudeMigrationGuide() {
     });
     setWizardPhase("chooser");
     setWizardStepIndex(0);
-    setGainingLearnTab("courses");
     setGainingHorizonTab("now");
     setGainingFeaturePage(0);
     setGainingFromExplore(false);
@@ -1130,7 +1145,6 @@ export default function ClaudeMigrationGuide() {
             setPath(null);
             setGainingFromExplore(true);
             setGainingHorizonTab("now");
-            setGainingLearnTab("courses");
             setScreen("gaining");
           }}
           className="border-0 bg-transparent p-0 text-base font-medium text-teal-700 underline decoration-teal-200 underline-offset-2 transition hover:text-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:text-teal-400 dark:hover:text-teal-300 dark:focus-visible:ring-teal-400 dark:focus-visible:ring-offset-gray-950"
@@ -1559,6 +1573,11 @@ export default function ClaudeMigrationGuide() {
                   service you use. It&apos;s usually just re-authentication — no full
                   reconfiguration.
                 </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Once connected, Claude will have access to everything you can access in that
+                  tool. It only searches when you ask — but connect only what you&apos;re
+                  comfortable with.
+                </p>
                 <a
                   href={URL.claudeConnectors}
                   target="_blank"
@@ -1798,6 +1817,11 @@ export default function ClaudeMigrationGuide() {
               In your Enterprise account: <strong>Settings → Connectors</strong>.
               Sign in again for each connector. Usually that is only a fresh login — no full
               setup from scratch.
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Once connected, Claude will have access to everything you can access in that
+              tool. It only searches when you ask — but connect only what you&apos;re
+              comfortable with.
             </p>
             <a
               href={URL.claudeConnectors}
@@ -2143,65 +2167,33 @@ export default function ClaudeMigrationGuide() {
 
       <div className="space-y-3">
         <p className="text-sm font-medium text-gray-500 dark:text-gray-500">
-          Courses &amp; video tutorials
+          Courses &amp; videos
         </p>
-        <div
-          className="inline-flex rounded-lg border border-gray-200 bg-stone-100 p-0.5 dark:border-gray-700 dark:bg-gray-900"
-          role="tablist"
-          aria-label="Courses and video tutorials"
-        >
-          <button
-            type="button"
-            role="tab"
-            id="gaining-tab-courses"
-            aria-selected={gainingLearnTab === "courses"}
-            aria-controls="gaining-panel-courses"
-            onClick={() => setGainingLearnTab("courses")}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 dark:focus-visible:ring-gray-500 dark:focus-visible:ring-offset-gray-950 ${gainingTabSelectedClass(gainingLearnTab === "courses", path)}`}
-          >
-            Courses
-          </button>
-          <button
-            type="button"
-            role="tab"
-            id="gaining-tab-videos"
-            aria-selected={gainingLearnTab === "videos"}
-            aria-controls="gaining-panel-videos"
-            onClick={() => setGainingLearnTab("videos")}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 dark:focus-visible:ring-gray-500 dark:focus-visible:ring-offset-gray-950 ${gainingTabSelectedClass(gainingLearnTab === "videos", path)}`}
-          >
-            Video tutorials
-          </button>
-        </div>
-
-        {gainingLearnTab === "courses" ? (
-          <div
-            id="gaining-panel-courses"
-            role="tabpanel"
-            aria-labelledby="gaining-tab-courses"
-            className="flex flex-wrap gap-2"
-          >
-            {ANTHROPIC_COURSES.map((c) => (
-              <VideoLink key={c.href} href={c.href} variant={mediaLinkVariant}>
-                {c.title}
+        <div className="flex flex-wrap gap-2">
+          {gainingHorizonTab === "now" ? (
+            <>
+              {ANTHROPIC_COURSES.filter((c) => c.horizon === "now").map((c) => (
+                <VideoLink key={c.href} href={c.href} variant={mediaLinkVariant}>
+                  {c.title}
+                </VideoLink>
+              ))}
+              <VideoLink href={URL.videoIntroArtifacts} variant={mediaLinkVariant}>
+                Watch: Intro to Artifacts
               </VideoLink>
-            ))}
-          </div>
-        ) : (
-          <div
-            id="gaining-panel-videos"
-            role="tabpanel"
-            aria-labelledby="gaining-tab-videos"
-            className="flex flex-wrap gap-2"
-          >
-            <VideoLink href={URL.videoIntroArtifacts} variant={mediaLinkVariant}>
-              Watch: Intro to Artifacts
-            </VideoLink>
-            <VideoLink href={URL.videoSkills} variant={mediaLinkVariant}>
-              Watch: Skills overview
-            </VideoLink>
-          </div>
-        )}
+              <VideoLink href={URL.videoSkills} variant={mediaLinkVariant}>
+                Watch: Skills overview
+              </VideoLink>
+            </>
+          ) : (
+            <>
+              {ANTHROPIC_COURSES.filter((c) => c.horizon === "next").map((c) => (
+                <VideoLink key={c.href} href={c.href} variant={mediaLinkVariant}>
+                  {c.title}
+                </VideoLink>
+              ))}
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex justify-end">
